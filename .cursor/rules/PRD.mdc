@@ -1,0 +1,173 @@
+---
+description: Product Requirements Document outlines the requirements and functionality of the product
+globs: 
+alwaysApply: false
+---
+# Product Requirements Document
+
+Below is an example **Product Requirements Document (PRD)** for the PTO Planner web application. 
+
+## 1. Product Overview
+
+**Product Name**: PTO Planner 
+**Description**: A web application that helps employees track and optimize their Paid Time Off (PTO) throughout the year. The app provides a visual calendar, calculates PTO accrual in multiple formats, automatically includes public holidays for the user’s country, and recommends the best strategies to use PTO for maximum rest and travel flexibility.  
+**Theme**: Custom Ghibli-inspired UI/UX  
+
+---
+
+## 2. Objectives & Goals
+
+1. **Centralize PTO Tracking**  
+   Enable users to easily view how many PTO days/hours they have, see how these accrue over time, and monitor updates as they select PTO days.
+
+2. **Optimize Vacation Planning**  
+   Provide intelligent suggestions on when to take PTO to maximize breaks (e.g., long weekends, short breaks, extended vacations).
+
+3. **Integrate Public Holidays**  
+   Automatically detect and display public holidays based on the user’s country to help them plan around official days off.
+
+---
+
+## 3. Key Features
+
+1. **Year-Long Calendar View**  
+   - Display the entire year in a single or multi-month view.  
+   - Mark weekends, public holidays, suggested PTO, and user-selected PTO.
+
+2. **PTO Bank & Accrual**  
+   - Input initial PTO balance (days or hours).  
+   - Support different accrual frequencies: weekly, bi-weekly, monthly, yearly.  
+   - Calculate updated PTO balance automatically as time passes or as PTO is selected.
+
+3. **Public Holidays Integration**  
+   - Detect user’s country automatically at first launch.  
+   - Fetch and display public holidays for that specific region.  
+   - Allow manual override if the user wants to change the country.
+
+4. **Suggested PTO Strategies**  
+   - Offer multiple “optimization” scenarios:  
+     1. **Balanced Mix**: Short breaks + longer vacations  
+     2. **Long Weekends**: Multiple 3–4 day breaks throughout the year  
+     3. **Mini Breaks**: Several 5–6 day breaks  
+     4. **Week-Long Breaks**: 7–9 day getaways  
+     5. **Extended Vacations**: 10–15 day breaks for deeper relaxation  
+   - Future expansions can include other strategies or custom preferences.
+
+5. **Selection & Visualization**  
+   - Click or tap on calendar days to mark PTO.  
+   - View total remaining PTO in real time after selecting/unselecting days.  
+   - Display break durations (start/end dates) for any planned PTO blocks.
+
+6. **Save & Retrieve Data**  
+   - Users can sign up with an email (no password).  
+   - A “magic link” is sent to that email to restore the user’s saved PTO plan.  
+   - Option to email the current PTO plan as a backup or reference.
+
+7. **Thematic UI/UX**  
+   - Ghibli-inspired color palette and design elements.  
+   - Soft, friendly aesthetic while maintaining clarity and functionality.  
+   - Intuitive navigation and clear visual cues (hover states, selection highlights).
+
+---
+
+## 4. Functional Requirements
+
+### 4.1 User Onboarding
+- **FR1**: On first load, detect user’s country (via browser locale or IP) and set default public holiday region.  
+- **FR2**: Prompt the user to input or confirm:  
+  1. Current PTO balance (days or hours)  
+  2. PTO accrual rate (number of days/hours added)  
+  3. PTO accrual frequency (weekly, bi-weekly, monthly, or yearly)
+
+### 4.2 Calendar & PTO Tracking
+- **FR3**: Display a 12-month calendar view.  
+- **FR4**: Color-code weekends, public holidays, and user-selected PTO.  
+- **FR5**: Provide real-time calculation of PTO remaining after days are selected.  
+- **FR6**: Include logic for partial or full-day PTO if using an hours-based system. (If partial days are not planned initially, keep it open for later iteration.)
+
+### 4.3 Accrual Calculations
+- **FR7**: Implement an accrual mechanism that updates the user’s PTO bank:  
+  1. On a per-pay-period basis (weekly or bi-weekly)  
+  2. On a monthly or yearly basis  
+- **FR8**: Display projected future accruals (e.g., “On May 1st, you will gain +1.5 days.”)
+
+### 4.4 Holiday Integration
+- **FR9**: Use the `date-holidays` library to load public holidays for the detected or chosen country.  
+- **FR10**: Update the calendar automatically to show official public holidays.
+
+### 4.5 PTO Suggestions
+- **FR11**: Implement multiple optimization modes (e.g., Balanced Mix, Long Weekends).  
+- **FR12**: Display suggested PTO blocks on the calendar and how they affect the user’s PTO balance.  
+- **FR13**: Provide an easy way for the user to switch strategies and recalculate.
+
+### 4.6 Data Persistence & Magic Link
+- **FR14**: Allow users to enter an email and receive a magic link to securely access their plan.  
+- **FR15**: Save the user’s current PTO selections and remaining balance in an associated user record.  
+- **FR16**: Let the user generate a summary of selected PTO to send via email.
+
+---
+
+## 5. Non-Functional Requirements
+
+1. **Performance**  
+   - Calendar rendering should be smooth and responsive.  
+   - Suggestions and PTO calculations should be near-instant for a seamless UX.
+
+2. **Scalability**  
+   - Must handle growth in user base and calendar queries (public holiday lookups, etc.).  
+   - Vercel hosting and Cloudflare CDN should minimize latency globally.
+
+3. **Security & Privacy**  
+   - Email-based “magic link” login must be secure (token-based).  
+   - Store minimal personal data (only email and PTO plan).  
+   - Comply with relevant data protection regulations (GDPR, etc.).
+
+4. **Usability**  
+   - Intuitive flow for first-time use.  
+   - Clear labeling and tooltips for any advanced PTO or accrual configurations.  
+   - Mobile-friendly, responsive layout.
+
+5. **Theme Consistency**  
+   - All UI elements should follow the Ghibli-inspired design guidelines (colors, typography, iconography).
+
+---
+
+## 6. User Flows
+
+1. **Onboarding Flow**  
+   1. **Landing Page**: Detect locale, show “Welcome” screen.  
+   2. **Input PTO Info**: Prompt for current balance, accrual rate, frequency.  
+   3. **Calendar Display**: User sees the year’s calendar with weekends and holidays.
+
+2. **Selecting PTO**  
+   1. **User Clicks a Day**: Day toggles as “Selected PTO.”  
+   2. **PTO Balance Update**: The app recalculates remaining PTO automatically.  
+   3. **Confirmation**: The user sees total days off chosen, remaining PTO in a summary panel.
+
+3. **Choosing an Optimization Strategy**  
+   1. **User Opens “Suggestions” Panel**: They see various strategy options.  
+   2. **App Highlights Suggested Days**: Previews changes on the calendar.  
+   3. **User Accepts or Rejects Suggestions**: Confirm or revert suggested days.
+
+4. **Saving & Retrieving via Email**  
+   1. **User Enters Email**: A “magic link” is sent.  
+   2. **User Opens Link**: Accesses the same PTO plan and balances from any device.
+
+---
+
+## 8. UX & UI Design
+
+1. **Look & Feel**  
+   - Soft pastel color palette reminiscent of Studio Ghibli films.  
+   - Whimsical, slightly animated transitions.  
+   - Rounded edges and gentle hover highlights.
+
+2. **Navigation & Layout**  
+   - **Top Bar**: Quick access to accrual settings and the “Suggestions” panel.  
+   - **Calendar Grid**: Primary focus area, large clickable squares for each day.  
+   - **Filters & Legends**: Key explaining colors for weekends, holidays, user-selected PTO, etc.   
+
+3. **Responsive Design**  
+   - Adapt to mobile with a swipe-friendly month navigation.  
+   - Scale down to a simpler UI where users can scroll through months vertically.
+

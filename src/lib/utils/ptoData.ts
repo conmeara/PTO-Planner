@@ -577,4 +577,4 @@ export const ptoData: Record<string, number> = {
 
     // Zimbabwe
     ZW: 22, // 22 days, 11 paid public holidays
-}; 
+};

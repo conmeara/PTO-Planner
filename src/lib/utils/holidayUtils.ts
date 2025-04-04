@@ -1,16 +1,17 @@
 import Holidays from 'date-holidays';
+import type { Holiday, ConsecutiveDaysOff } from '../types';
 
 const MS_IN_A_DAY = 86400000;
 const MAX_GAP_LENGTH = 5;
 
 // Core date helper functions
-const dateKey = (date: Date): string => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-const isWeekend = (date: Date, weekendDays: number[]): boolean => weekendDays.includes(date.getDay());
-const isHoliday = (date: Date, holidays: { date: Date }[]): boolean => holidays.some(h => dateKey(h.date) === dateKey(date));
-const daysBetween = (start: Date, end: Date): number => Math.round((end.getTime() - start.getTime()) / MS_IN_A_DAY);
+export const dateKey = (date: Date): string => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+export const isWeekend = (date: Date, weekendDays: number[]): boolean => weekendDays.includes(date.getDay());
+export const isHoliday = (date: Date, holidays: { date: Date }[]): boolean => holidays.some(h => dateKey(h.date) === dateKey(date));
+export const daysBetween = (start: Date, end: Date): number => Math.round((end.getTime() - start.getTime()) / MS_IN_A_DAY);
 
 // Get holidays for a year, handling multi-day holidays and timezone differences
-export function getHolidaysForYear(countryCode: string, year: number, stateCode?: string): { date: Date; name: string }[] {
+export function getHolidaysForYear(countryCode: string, year: number, stateCode?: string): Holiday[] {
     // Use browser's languages and timezone to get localized holiday names
     const opts = { 
         languages: navigator.languages.map(lang => lang.split('-')[0]),
@@ -31,7 +32,7 @@ export function getHolidaysForYear(countryCode: string, year: number, stateCode?
 }
 
 // Find optimal placement of PTO days to maximize consecutive time off
-export function optimizeDaysOff(holidays: { date: Date }[], year: number, daysOff: number, weekendDays: number[] = [0, 6]): Date[] {
+export function optimizeDaysOff(holidays: Holiday[], year: number, daysOff: number, weekendDays: number[] = [0, 6]): Date[] {
     const allDaysOff = new Set([
         ...holidays.filter(h => h.date.getFullYear() === year).map(h => dateKey(h.date)),
         ...getWeekends(year, weekendDays).map(d => dateKey(d))
@@ -42,7 +43,7 @@ export function optimizeDaysOff(holidays: { date: Date }[], year: number, daysOf
 }
 
 // Calculate periods of consecutive days off (weekends + holidays + PTO)
-export function calculateConsecutiveDaysOff(holidays: { date: Date }[], optimizedDaysOff: Date[], year: number, weekendDays: number[] = [0, 6]) {
+export function calculateConsecutiveDaysOff(holidays: Holiday[], optimizedDaysOff: Date[], year: number, weekendDays: number[] = [0, 6]): ConsecutiveDaysOff[] {
     const allDaysOff = new Set([
         ...holidays.map(h => dateKey(h.date)),
         ...optimizedDaysOff.map(d => dateKey(d)),
@@ -175,11 +176,10 @@ function isValidConsecutiveGroup(group: Date[], weekendDays: number[]): boolean 
 }
 
 // Create a period object from a group of consecutive days
-function createPeriod(group: Date[], optimizedDaysOff: Date[]) {
+function createPeriod(group: Date[], optimizedDaysOff: Date[]): ConsecutiveDaysOff {
     return {
         startDate: group[0],
         endDate: group[group.length - 1],
-        totalDays: daysBetween(group[0], group[group.length - 1]) + 1,
-        usedDaysOff: group.filter(d => optimizedDaysOff.some(od => dateKey(od) === dateKey(d))).length
+        totalDays: daysBetween(group[0], group[group.length - 1]) + 1
     };
 }

@@ -1,0 +1,19 @@
+---
+description: Tech stack for app
+globs: 
+alwaysApply: false
+---
+# Tech Stack
+
+- **Framework**: [SvelteKit](mdc:https:/kit.svelte.dev) (v2.0.0)
+- **UI/Component Library**: Svelte (v5.0.0)
+- **Programming Languages**: TypeScript (v5.0.0), JavaScript
+- **Styling**: CSS
+- **Package Manager**: npm
+- **Build Tool**: Vite (v5.0.3)
+- **Type Checking**: svelte-check (v4.0.0)
+- **Date & Holidays Library**: date-holidays (v3.23.12)
+- **Internationalization**: i18n-iso-countries (v7.13.0)
+- **Hosting**: [Vercel](mdc:https:/vercel.com)
+- **CDN and Security**: [Cloudflare](mdc:https:/www.cloudflare.com)
+- **IDE**: [Cursor IDE](mdc:https:/cursor.so)

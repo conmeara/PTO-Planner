@@ -1,0 +1,61 @@
+---
+description: Project structure and file organization guidelines
+globs: 
+alwaysApply: false
+---
+# Project Structure
+
+## Main Structure
+- SvelteKit application for planning PTO efficiently with holidays
+- Main app source code is in `src/` directory
+- Single-page application with route in `src/routes`
+- Components, utilities, and types are in `src/lib`
+- Static assets are in `static/` directory
+
+## File Naming and Organization
+- Use PascalCase for component files (e.g., `components/Calendar.svelte`)
+- Use camelCase for utility and store files (e.g., `utils/ptoData.ts`)
+- Components are organized in `src/lib/components`
+- UI components are in `src/lib/components/ui`
+- Stores are in `src/lib/stores`
+- Types are defined in `src/lib/types`
+- Utility functions are in `src/lib/utils`
+
+## Component Organization
+- Core components:
+  - `src/lib/components/calendar/` - Calendar components for displaying dates
+  - `src/lib/components/layout/` - Layout and structural components
+  - `src/lib/components/settings/` - Settings panels and controls
+  - `src/lib/components/ui/` - Reusable UI elements
+- Components are exported through index files for clean imports
+
+## Data Management
+- State management through Svelte stores in `src/lib/stores/`
+  - `ptoStore.ts` - Manages PTO data and calculations
+  - `holidayStore.ts` - Manages holiday data and country selections
+- Data utility functions:
+  - `src/lib/utils/ptoData.ts` - PTO calculation algorithms
+  - `src/lib/utils/holidayUtils.ts` - Holiday data processing
+
+## Routes
+- Main application page at `src/routes/+page.svelte`
+- SvelteKit route configuration in the routes directory
+
+## Types
+- Type definitions in `src/lib/types/index.ts`
+- Includes interfaces for holidays, PTO data, and application state
+
+## Dependencies
+- External libraries:
+  - `date-holidays` - For holiday data
+  - `i18n-iso-countries` - For country code/name handling
+- Dev dependencies:
+  - SvelteKit and related tools
+  - TypeScript
+  - Vite
+
+## Configuration Files
+- `svelte.config.js` - SvelteKit configuration
+- `vite.config.ts` - Vite bundler configuration
+- `tsconfig.json` - TypeScript configuration
+- `package.json` - Dependencies and scripts

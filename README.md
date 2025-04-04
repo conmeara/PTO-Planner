@@ -31,9 +31,15 @@ This project was created to efficiently manage vacation days by aligning them wi
 
 ## Tech Stack
 
-- **Framework**: [SvelteKit](https://kit.svelte.dev/)
-- **Programming Language**: JavaScript
+- **Framework**: [SvelteKit](https://kit.svelte.dev/) (v2.0.0)
+- **UI/Component Library**: Svelte (v5.0.0)
+- **Programming Languages**: TypeScript (v5.0.0), JavaScript
 - **Styling**: CSS
+- **Package Manager**: npm
+- **Build Tool**: Vite (v5.0.3)
+- **Type Checking**: svelte-check (v4.0.0)
+- **Date & Holidays Library**: date-holidays (v3.23.12)
+- **Internationalization**: i18n-iso-countries (v7.13.0)
 - **Hosting**: [Vercel](https://vercel.com/)
 - **CDN and Security**: [Cloudflare](https://www.cloudflare.com/)
 - **IDE**: [Cursor IDE](https://cursor.so/)
