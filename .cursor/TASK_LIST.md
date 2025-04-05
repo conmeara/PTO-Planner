@@ -1,133 +1,161 @@
-# PTO Planner Implementation Tasks
+# PTO Planner - Next Steps Task List
 
-This document outlines the next development steps for the PTO Planner application, focusing on completing core functionality.
+Below is the updated task list focusing on user input functionality in the top-pill menu, calendar interaction, saving and hosting, styling with the Ghibli theme, and eventually implementing enhanced PTO optimization algorithms.
+
+---
 
 ## Completed Tasks
 
-- [x] Set up project structure
-- [x] Create basic calendar components (CalendarGrid.svelte, CalendarMonth.svelte)
-- [x] Set up initial store files (ptoStore.ts, holidayStore.ts)
-- [x] Implement initial utility functions (ptoData.ts, holidayUtils.ts)
+- [x] Basic calendar rendering (CalendarGrid, CalendarMonth)
+- [x] Basic PTO and holiday store setup
+- [x] Initial UI layout with top tabs/pills (Suggested PTO, Selected PTO, Weekends, Public Holidays)
+- [x] LocalStorage persistence scaffolding (partial)
+
+---
 
 ## In Progress Tasks
 
-- [ ] Fix day selection functionality in the calendar
-- [ ] Configure Ghibli theme styling
-- [ ] Complete UI components and layout
-- [ ] Implement PTO input form functionality
+1. **Top Pill Menu Functionality**
+   - [X] Ensure tabs for **Suggested PTO**, **Selected PTO**, **Weekends**, and **Public Holidays** correctly open/close their respective panels.
+   - [ ] Hook up user interactions (clicking a day, toggling weekend settings, changing country/year, etc.) so they refresh data properly in the UI.
 
-## Priority Tasks
+2. **Calendar Interaction**
+   - [ ] Fix or refine day-selection logic so that:
+     - Clicking a day toggles PTO on/off correctly.
+     - The UI highlights selected PTO days immediately.
+     - PTO balance updates in real time.
+   - [ ] Confirm that weekends and public holidays remain non-selectable (or selectable only if business logic allows).
+   - [ ] Validate that all store reactivity flows as expected.
 
-### Bug Fixes
+3. **User Input Sections in the Settings Panel**
+   - [ ] **Selected PTO Panel**:  
+     - Display the user’s currently selected PTO days.  
+     - Show total consecutive days.  
+     - Integrate with the existing PTO store to update the selected days in real time.
+   - [ ] **Public Holidays Panel**:  
+     - Display the selected country/state and year.  
+     - Show an editable list or summary of public holidays.  
+     - Allow toggling (or hiding) specific holidays if needed.
+   - [ ] **Weekend Settings Panel**:  
+     - List which days are “weekend” by default.  
+     - Allow adding/removing weekend days.  
+     - Re-render calendar once changes are made.
+   - [ ] **Suggested PTO Panel**:  
+     - For now, display an empty or placeholder list.  
+     - Prepare for future integration with the advanced optimization logic.
 
-- [ ] Debug and fix the toggleSelectedPTODay function in ptoStore.ts
-  - [ ] Verify date comparison logic works correctly
-  - [ ] Add console logging to trace selection state changes
-  - [ ] Fix any issues with date serialization/deserialization
-- [ ] Fix CalendarMonth.svelte day selection issues
-  - [ ] Ensure proper reactivity with the ptoStore
-  - [ ] Fix visual feedback when days are selected
-  - [ ] Test with different browsers
+4. **Data Saving & Persistence**
+   - [ ] Expand localStorage saving so all user inputs (weekends, PTO, holidays, year, etc.) persist across sessions.
+   - [ ] Begin designing a “Save/Load” concept in the UI:
+     - Possibly a tab or button in the “Selected PTO” section.
+     - Include a placeholder for “Buy Me a Coffee” link.
 
-### Theme Implementation
+---
 
-- [ ] Configure Ghibli theme colors in tailwind.config.js
-- [ ] Replace hard-coded color values with Ghibli theme variables:
-  - [ ] Update weekend color (#e0e0e0 → ghibli-card)
-  - [ ] Update optimized days color (#4caf50 → ghibli-accent)
-  - [ ] Update holiday color (#7e57c2 → ghibli-blue)
-  - [ ] Update selected-pto color (#ff9800 → ghibli-primary)
-- [ ] Apply Ghibli theme fonts and styling to components
+## Upcoming Tasks
 
-### UI and Navigation
+Once the above functionality is complete and stable, we will proceed as follows:
 
-- [ ] Implement pill/island style menu with calendar legend tabs
-- [ ] Create Legend.svelte component with items for:
-  - [ ] Suggested PTO
-  - [ ] Selected PTO
-  - [ ] Weekend
-  - [ ] Public Holidays
-- [ ] Ensure responsive design works correctly on all screen sizes
+1. **Styling & Theming**
+   - [ ] Migrate current hard-coded colors to Ghibli theme variables.
+   - [ ] Refine overall look (pills, headings, backgrounds) to match the Ghibli-inspired palette.
+   - [ ] Confirm responsive layout looks good on mobile devices.
 
-### User Input Functionality
+2. **Hosting & Buy-Me-A-Coffee**
+   - [ ] Finalize deployment on Vercel (including environment config if needed).
+   - [ ] Add “Buy Me a Coffee” link or button in the “Save” menu or top navigation.
 
-- [ ] Create PtoForm.svelte in settings/ directory
-- [ ] Connect form to ptoStore.ts for:
-  - [ ] Initial PTO balance
-  - [ ] PTO balance unit (days/hours)
-  - [ ] PTO balance as of date
-  - [ ] Accrual rate
-  - [ ] Accrual frequency
-- [ ] Improve UI for input forms with proper validation
-- [ ] Add save functionality for user preferences
+3. **Suggested PTO Optimization Algorithms**
+   - [ ] Implement advanced strategies (e.g., Balanced Mix, Long Weekends, etc.) in `holidayUtils.ts` or a new `optimizationUtils.ts`.
+   - [ ] Add UI for toggling between different strategy modes in the **Suggested PTO** panel.
+   - [ ] Ensure results are displayed on the calendar (highlighting proposed days).
 
-### Calendar Interaction
+4. **Future Enhancements**
+   - [ ] User authentication and “magic link” functionality.
+   - [ ] Email summary or shareable link.
+   - [ ] Additional “What if” scenarios (e.g., partial days, year-over-year carryover).
 
-- [ ] Improve CalendarMonth.svelte to show better visual feedback on day clicks
-- [ ] Add hover effects for interactive calendar days
-- [ ] Connect calendar interactions with ptoStore more effectively
-- [ ] Add real-time PTO balance calculations as days are selected
-- [ ] Display duration summary for consecutive PTO selections
+---
 
-### PTO Optimization
+## Detailed Implementation Plan
 
-- [ ] Implement PTO optimization strategies in ptoData.ts:
-  - [ ] Balanced Mix - combination of short breaks and longer vacations
-  - [ ] Long Weekends - extend weekends to 3-4 day breaks
-  - [ ] Mini Breaks - create 5-6 day breaks throughout year
-  - [ ] Week-Long Breaks - optimize for 7-9 day getaways
-  - [ ] Extended Vacations - find opportunities for 10-15 day breaks
-- [ ] Create OptimizationPanel.svelte in settings/ directory
-- [ ] Add UI controls to switch between optimization strategies
-- [ ] Calculate and display suggested PTO days for each strategy
-- [ ] Add "Apply Strategy" button to accept optimization suggestions
+### 1. Pill Menu & Calendar Interaction
 
-### Data Persistence
+- **Files to Update**:  
+  - `src/lib/components/ui/CalendarLegendMenu.svelte`  
+  - `src/lib/components/calendar/CalendarMonth.svelte`  
+  - `src/lib/stores/ptoStore.ts`  
+  - `src/lib/stores/holidayStore.ts`
+- **Steps**:  
+  1. Verify each tab’s toggle in `CalendarLegendMenu.svelte` calls the correct logic.  
+  2. In `CalendarMonth.svelte`, ensure `handleDayClick()` updates `selectedPTODays` in `ptoStore.ts`.  
+  3. Confirm weekends/holidays ignore or handle clicks per business logic.  
+  4. Re-check reactivity with derived store data to reflect new PTO selections instantly.
 
-- [ ] Debug localStorage persistence issues
-- [ ] Add email-based "magic link" functionality
-- [ ] Create summary/export feature for PTO plans
+### 2. User Input Panels
 
-## Implementation Plan
+- **Files to Update**:  
+  - `SettingsPanel.svelte`  
+  - `PTOBalanceSettings.svelte`  
+  - `CountrySelector.svelte`, `StateSelector.svelte`, `WeekendSettings.svelte`, `DaysOffSelector.svelte`  
+  - `CalendarLegendMenu.svelte` (for toggling the new sections)
+- **Steps**:  
+  1. Ensure each panel corresponds to the correct store updates (country changes reload holiday data, etc.).  
+  2. In the **Selected PTO** panel, show a list of the user’s chosen days (`selectedPTODays`).  
+  3. Summaries for consecutive day blocks, total PTO used, and the updated balance.  
+  4. In the **Weekend Settings** panel, allow removing or adding day indices to `weekendDays`.
 
-### Bug Fix Approach
+### 3. Persistence & Save Menu
 
-1. Add diagnostic logging to ptoStore.ts to track state changes
-2. Create simple test cases for day selection
-3. Verify that date objects are properly handled in store functions
-4. Fix any serialization issues when storing/retrieving from localStorage
-5. Ensure proper reactivity between store updates and component rendering
+- **Files to Update**:  
+  - `ptoStore.ts`, `holidayStore.ts` (to confirm all data is stored in localStorage).  
+  - Possibly a new `SaveMenu.svelte` or repurpose an existing panel for “Save & Support.”
+- **Steps**:  
+  1. Confirm each store’s subscribe block updates localStorage.  
+  2. On mount, re-hydrate from localStorage to preserve user selections.  
+  3. Add a “Save/Load” button or section in the UI.  
+  4. Insert “Buy Me a Coffee” link or donation button inside that same panel.
 
-### Calendar Interaction Flow
+### 4. Theme & UI Cleanup
 
-1. User clicks on a non-weekend, non-holiday date in CalendarMonth.svelte
-2. toggleSelectedPTODay function in ptoStore.ts is called
-3. selectedPTODays store is updated
-4. CalendarMonth reacts to the change and updates the visual display
-5. PTO balance calculations are updated via store subscription
-6. Duration for consecutive days is displayed in the calendar
+- **Files to Update**:  
+  - Potentially all Svelte components containing color definitions.
+  - `tailwind.config.js` (if we integrate or finalize Tailwind for Ghibli theming).
+- **Steps**:  
+  1. Replace existing color hex codes with theme variables.  
+  2. Adjust spacing, fonts, and radius for a consistent Ghibli style.  
+  3. Validate final look on small/medium/large screens.
 
-### PTO Optimization Algorithm
+### 5. PTO Optimization Strategies
 
-1. Identify all weekends and public holidays using holidayStore data
-2. For each strategy:
-   - Analyze full year calendar to find optimal blocks based on strategy rules
-   - Consider existing PTO balance constraints
-   - Identify periods that maximize time off with minimum PTO days used
-   - Return optimizedDaysOff array to be displayed in the calendar
+- **Files to Update**:  
+  - `holidayUtils.ts` or new `optimizationUtils.ts` for advanced strategy logic.  
+  - `CalendarLegendMenu.svelte` or a new `StrategySelector.svelte`.
+- **Steps**:  
+  1. Write strategy functions for Balanced Mix, Long Weekends, etc.  
+  2. Integrate with existing data structures for holidays and user’s PTO.  
+  3. Display suggested days in a special color or separate from user-selected PTO.  
+  4. Provide an “Apply” or “Add to My PTO” button to incorporate suggested days into the user’s plan.
 
-### Relevant Files
+---
 
-#### Existing Files
-- `src/lib/components/calendar/CalendarMonth.svelte` - Main calendar component with day selection
-- `src/lib/components/calendar/CalendarGrid.svelte` - Calendar grid structure
-- `src/lib/stores/ptoStore.ts` - PTO state management with toggleSelectedPTODay function
-- `src/lib/stores/holidayStore.ts` - Holiday data management
-- `src/lib/utils/ptoData.ts` - PTO calculation utilities
-- `src/lib/utils/holidayUtils.ts` - Holiday data utilities
+## Relevant Files
 
-#### Files to Create
-- `src/lib/components/Legend.svelte` - Calendar legend component
-- `src/lib/components/settings/PtoForm.svelte` - PTO input form
-- `src/lib/components/settings/OptimizationPanel.svelte` - PTO optimization panel
-- `src/lib/components/layout/Menu.svelte` - Pill/island style menu 
+- `src/lib/components/ui/CalendarLegendMenu.svelte`
+- `src/lib/components/calendar/CalendarGrid.svelte`
+- `src/lib/components/calendar/CalendarMonth.svelte`
+- `src/lib/components/settings/`
+- `src/lib/stores/ptoStore.ts`
+- `src/lib/stores/holidayStore.ts`
+- `src/lib/utils/holidayUtils.ts`
+- `src/lib/utils/ptoData.ts` (or new `optimizationUtils.ts`)
+
+---
+
+## Summary
+
+1. **Complete the top-pill menu logic** and ensure each panel (Suggested PTO, Selected PTO, Weekends, Public Holidays) is fully functional.  
+2. **Refine calendar day-selection** and real-time store updates.  
+3. **Implement a robust “Save” approach** and integrate the “Buy Me a Coffee” link.  
+4. **Polish the Ghibli theme** across all components.  
+5. **Develop advanced PTO optimization** strategies and present them in the UI.

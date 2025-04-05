@@ -1,10 +1,12 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
+    import type { Unsubscriber } from 'svelte/store';
     import CalendarLegendMenu from '../ui/CalendarLegendMenu.svelte';
-    import { initializeStores, updateHolidays } from '../../stores/holidayStore';
+    import { initializeStores, updateHolidays, selectedCountryCode } from '../../stores/holidayStore';
     import { initializePTOStores } from '../../stores/ptoStore';
 
     let activeTab = 'holiday'; // Default to holiday tab
+    let countryCodeSubscription: Unsubscriber | undefined;
 
     function handleTabChange(event: CustomEvent<string>) {
         // Update active tab based on event detail
@@ -20,8 +22,24 @@
     }
 
     onMount(() => {
+        // Initialize stores
         initializeStores();
         initializePTOStores();
+        
+        // Subscribe to country code changes
+        countryCodeSubscription = selectedCountryCode.subscribe(code => {
+            if (code) {
+                console.log(`Country code changed to: ${code}, updating holidays`);
+                updateHolidays();
+            }
+        });
+    });
+
+    onDestroy(() => {
+        // Clean up subscription
+        if (countryCodeSubscription) {
+            countryCodeSubscription();
+        }
     });
 </script>
 
