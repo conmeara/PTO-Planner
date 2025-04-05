@@ -43,11 +43,18 @@ export function optimizeDaysOff(holidays: Holiday[], year: number, daysOff: numb
 }
 
 // Calculate periods of consecutive days off (weekends + holidays + PTO)
-export function calculateConsecutiveDaysOff(holidays: Holiday[], optimizedDaysOff: Date[], year: number, weekendDays: number[] = [0, 6]): ConsecutiveDaysOff[] {
+export function calculateConsecutiveDaysOff(
+    holidays: Holiday[], 
+    optimizedDaysOff: Date[], 
+    year: number, 
+    weekendDays: number[] = [0, 6],
+    selectedPTODays: Date[] = []
+): ConsecutiveDaysOff[] {
     const allDaysOff = new Set([
         ...holidays.map(h => dateKey(h.date)),
         ...optimizedDaysOff.map(d => dateKey(d)),
-        ...getWeekends(year, weekendDays).map(d => dateKey(d))
+        ...getWeekends(year, weekendDays).map(d => dateKey(d)),
+        ...selectedPTODays.map(d => dateKey(d))
     ]);
 
     const consecutiveDaysOff = [];

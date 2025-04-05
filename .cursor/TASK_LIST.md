@@ -10,6 +10,7 @@ Below is the updated task list focusing on user input functionality in the top-p
 - [x] Basic PTO and holiday store setup
 - [x] Initial UI layout with top tabs/pills (Suggested PTO, Selected PTO, Weekends, Public Holidays)
 - [x] LocalStorage persistence scaffolding (partial)
+- [x] Suggested PTO Optimization Algorithms
 
 ---
 
@@ -29,7 +30,7 @@ Below is the updated task list focusing on user input functionality in the top-p
 
 3. **User Input Sections in the Settings Panel**
    - [ ] **Selected PTO Panel**:  
-     - Display the user’s currently selected PTO days.  
+     - Display the user's currently selected PTO days.  
      - Show total consecutive days.  
      - Integrate with the existing PTO store to update the selected days in real time.
    - [ ] **Public Holidays Panel**:  
@@ -37,18 +38,19 @@ Below is the updated task list focusing on user input functionality in the top-p
      - Show an editable list or summary of public holidays.  
      - Allow toggling (or hiding) specific holidays if needed.
    - [ ] **Weekend Settings Panel**:  
-     - List which days are “weekend” by default.  
+     - List which days are "weekend" by default.  
      - Allow adding/removing weekend days.  
      - Re-render calendar once changes are made.
-   - [ ] **Suggested PTO Panel**:  
-     - For now, display an empty or placeholder list.  
-     - Prepare for future integration with the advanced optimization logic.
+   - [x] **Suggested PTO Panel**:  
+     - Display optimization strategy selector.
+     - Show suggested PTO days based on selected strategy.
+     - Include "Apply" button to add suggested days to selected PTO.
 
 4. **Data Saving & Persistence**
    - [ ] Expand localStorage saving so all user inputs (weekends, PTO, holidays, year, etc.) persist across sessions.
-   - [ ] Begin designing a “Save/Load” concept in the UI:
-     - Possibly a tab or button in the “Selected PTO” section.
-     - Include a placeholder for “Buy Me a Coffee” link.
+   - [ ] Begin designing a "Save/Load" concept in the UI:
+     - Possibly a tab or button in the "Selected PTO" section.
+     - Include a placeholder for "Buy Me a Coffee" link.
 
 ---
 
@@ -63,17 +65,12 @@ Once the above functionality is complete and stable, we will proceed as follows:
 
 2. **Hosting & Buy-Me-A-Coffee**
    - [ ] Finalize deployment on Vercel (including environment config if needed).
-   - [ ] Add “Buy Me a Coffee” link or button in the “Save” menu or top navigation.
+   - [ ] Add "Buy Me a Coffee" link or button in the "Save" menu or top navigation.
 
-3. **Suggested PTO Optimization Algorithms**
-   - [ ] Implement advanced strategies (e.g., Balanced Mix, Long Weekends, etc.) in `holidayUtils.ts` or a new `optimizationUtils.ts`.
-   - [ ] Add UI for toggling between different strategy modes in the **Suggested PTO** panel.
-   - [ ] Ensure results are displayed on the calendar (highlighting proposed days).
-
-4. **Future Enhancements**
-   - [ ] User authentication and “magic link” functionality.
+3. **Future Enhancements**
+   - [ ] User authentication and "magic link" functionality.
    - [ ] Email summary or shareable link.
-   - [ ] Additional “What if” scenarios (e.g., partial days, year-over-year carryover).
+   - [ ] Additional "What if" scenarios (e.g., partial days, year-over-year carryover).
 
 ---
 
@@ -87,7 +84,7 @@ Once the above functionality is complete and stable, we will proceed as follows:
   - `src/lib/stores/ptoStore.ts`  
   - `src/lib/stores/holidayStore.ts`
 - **Steps**:  
-  1. Verify each tab’s toggle in `CalendarLegendMenu.svelte` calls the correct logic.  
+  1. Verify each tab's toggle in `CalendarLegendMenu.svelte` calls the correct logic.  
   2. In `CalendarMonth.svelte`, ensure `handleDayClick()` updates `selectedPTODays` in `ptoStore.ts`.  
   3. Confirm weekends/holidays ignore or handle clicks per business logic.  
   4. Re-check reactivity with derived store data to reflect new PTO selections instantly.
@@ -101,7 +98,7 @@ Once the above functionality is complete and stable, we will proceed as follows:
   - `CalendarLegendMenu.svelte` (for toggling the new sections)
 - **Steps**:  
   1. Ensure each panel corresponds to the correct store updates (country changes reload holiday data, etc.).  
-  2. In the **Selected PTO** panel, show a list of the user’s chosen days (`selectedPTODays`).  
+  2. In the **Selected PTO** panel, show a list of the user's chosen days (`selectedPTODays`).  
   3. Summaries for consecutive day blocks, total PTO used, and the updated balance.  
   4. In the **Weekend Settings** panel, allow removing or adding day indices to `weekendDays`.
 
@@ -109,12 +106,12 @@ Once the above functionality is complete and stable, we will proceed as follows:
 
 - **Files to Update**:  
   - `ptoStore.ts`, `holidayStore.ts` (to confirm all data is stored in localStorage).  
-  - Possibly a new `SaveMenu.svelte` or repurpose an existing panel for “Save & Support.”
+  - Possibly a new `SaveMenu.svelte` or repurpose an existing panel for "Save & Support."
 - **Steps**:  
-  1. Confirm each store’s subscribe block updates localStorage.  
+  1. Confirm each store's subscribe block updates localStorage.  
   2. On mount, re-hydrate from localStorage to preserve user selections.  
-  3. Add a “Save/Load” button or section in the UI.  
-  4. Insert “Buy Me a Coffee” link or donation button inside that same panel.
+  3. Add a "Save/Load" button or section in the UI.  
+  4. Insert "Buy Me a Coffee" link or donation button inside that same panel.
 
 ### 4. Theme & UI Cleanup
 
@@ -126,16 +123,24 @@ Once the above functionality is complete and stable, we will proceed as follows:
   2. Adjust spacing, fonts, and radius for a consistent Ghibli style.  
   3. Validate final look on small/medium/large screens.
 
-### 5. PTO Optimization Strategies
+### 5. PTO Optimization Strategies - COMPLETED
 
-- **Files to Update**:  
-  - `holidayUtils.ts` or new `optimizationUtils.ts` for advanced strategy logic.  
-  - `CalendarLegendMenu.svelte` or a new `StrategySelector.svelte`.
-- **Steps**:  
-  1. Write strategy functions for Balanced Mix, Long Weekends, etc.  
-  2. Integrate with existing data structures for holidays and user’s PTO.  
-  3. Display suggested days in a special color or separate from user-selected PTO.  
-  4. Provide an “Apply” or “Add to My PTO” button to incorporate suggested days into the user’s plan.
+- **Files Updated**:  
+  - Added `src/lib/utils/optimizationUtils.ts` for strategy implementation.
+  - Created `src/lib/stores/strategyStore.ts` for strategy selection.
+  - Updated `src/lib/types/index.ts` with strategy types and interfaces.
+  - Modified `CalendarLegendMenu.svelte` to add strategy selector.
+  - Updated `CalendarGrid.svelte` and `CalendarMonth.svelte` to display suggested days.
+- **Implementation**:  
+  1. Created five strategy functions:
+     - Balanced Mix - distributes days evenly across the year
+     - Long Weekends - extends weekends for 3-4 day breaks
+     - Mini Breaks - creates 2-3 day mini-vacations
+     - Week-Long Breaks - focuses on full week vacations
+     - Extended Vacations - builds 10+ day extended breaks
+  2. Integrated with existing holiday and weekend data
+  3. Added UI to select strategies and display suggested days in a unique color
+  4. Implemented "Apply" button to add suggested days to selected PTO
 
 ---
 
@@ -147,8 +152,10 @@ Once the above functionality is complete and stable, we will proceed as follows:
 - `src/lib/components/settings/`
 - `src/lib/stores/ptoStore.ts`
 - `src/lib/stores/holidayStore.ts`
+- `src/lib/stores/strategyStore.ts`
 - `src/lib/utils/holidayUtils.ts`
-- `src/lib/utils/ptoData.ts` (or new `optimizationUtils.ts`)
+- `src/lib/utils/optimizationUtils.ts`
+- `src/lib/types/index.ts`
 
 ---
 
@@ -156,6 +163,6 @@ Once the above functionality is complete and stable, we will proceed as follows:
 
 1. **Complete the top-pill menu logic** and ensure each panel (Suggested PTO, Selected PTO, Weekends, Public Holidays) is fully functional.  
 2. **Refine calendar day-selection** and real-time store updates.  
-3. **Implement a robust “Save” approach** and integrate the “Buy Me a Coffee” link.  
+3. **Implement a robust "Save" approach** and integrate the "Buy Me a Coffee" link.  
 4. **Polish the Ghibli theme** across all components.  
-5. **Develop advanced PTO optimization** strategies and present them in the UI.
+5. **COMPLETED: Developed advanced PTO optimization strategies** with multiple options for users to optimize their time off.

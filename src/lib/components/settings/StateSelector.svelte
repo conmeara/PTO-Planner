@@ -1,11 +1,43 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import Holidays from 'date-holidays';
     import { selectedCountryCode, selectedState, selectedStateCode, updateHolidays } from '../../stores/holidayStore';
     import type { StateInfo } from '../../types';
 
+    // Input reference for datalist binding
     let statesInput: HTMLInputElement;
     let statesList: Record<string, string> = {};
+
+    // Common countries with states/provinces
+    const countryStates: {[key: string]: {[key: string]: string}} = {
+        'US': {
+            'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+            'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+            'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+            'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+            'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+            'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+            'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+            'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+            'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+            'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming',
+            'DC': 'District of Columbia'
+        },
+        'CA': {
+            'AB': 'Alberta', 'BC': 'British Columbia', 'MB': 'Manitoba', 'NB': 'New Brunswick',
+            'NL': 'Newfoundland and Labrador', 'NS': 'Nova Scotia', 'NT': 'Northwest Territories',
+            'NU': 'Nunavut', 'ON': 'Ontario', 'PE': 'Prince Edward Island', 'QC': 'Quebec',
+            'SK': 'Saskatchewan', 'YT': 'Yukon'
+        },
+        'AU': {
+            'ACT': 'Australian Capital Territory', 'NSW': 'New South Wales', 'NT': 'Northern Territory',
+            'QLD': 'Queensland', 'SA': 'South Australia', 'TAS': 'Tasmania', 'VIC': 'Victoria', 'WA': 'Western Australia'
+        },
+        'DE': {
+            'BW': 'Baden-Württemberg', 'BY': 'Bayern', 'BE': 'Berlin', 'BB': 'Brandenburg', 'HB': 'Bremen',
+            'HH': 'Hamburg', 'HE': 'Hessen', 'MV': 'Mecklenburg-Vorpommern', 'NI': 'Niedersachsen',
+            'NW': 'Nordrhein-Westfalen', 'RP': 'Rheinland-Pfalz', 'SL': 'Saarland', 'SN': 'Sachsen',
+            'ST': 'Sachsen-Anhalt', 'SH': 'Schleswig-Holstein', 'TH': 'Thüringen'
+        }
+    };
 
     // Subscribe to country code changes to update states list
     $: {
@@ -16,10 +48,9 @@
 
     function updateStatesList(countryCode: string) {
         try {
-            const hd = new Holidays(countryCode);
-            const states = hd.getStates();
-            if (states) {
-                statesList = states;
+            // Get states for known countries
+            if (countryStates[countryCode]) {
+                statesList = countryStates[countryCode];
             } else {
                 statesList = {};
             }

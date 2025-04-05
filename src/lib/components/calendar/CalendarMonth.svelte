@@ -9,6 +9,7 @@
     export let month: number;
     export let holidays: Holiday[];
     export let optimizedDaysOff: Date[];
+    export let strategySuggestedDays: Date[] = [];
     export let consecutiveDaysOff: ConsecutiveDaysOff[];
     export let selectedCountryCode: string;
     export let weekendDays: number[] = [6, 0];
@@ -76,6 +77,14 @@
 
     function isOptimizedDayOff(day: number): boolean {
         return optimizedDaysOff.some(date =>
+            date.getFullYear() === year &&
+            date.getMonth() === month &&
+            date.getDate() === day
+        );
+    }
+
+    function isStrategySuggestedDay(day: number): boolean {
+        return strategySuggestedDays.some(date =>
             date.getFullYear() === year &&
             date.getMonth() === month &&
             date.getDate() === day
@@ -179,9 +188,16 @@
         {@const holiday = getHoliday(day)}
         {@const date = new Date(year, month, day)}
         {@const isPTO = isSelectedPTO(day)}
+        {@const isStrategySuggested = isStrategySuggestedDay(day)}
         {@const availablePTO = getAvailablePTO(day)}
         <div
-            class="day {isWeekend(date) ? 'weekend' : ''} {holiday ? 'holiday' : ''} {isOptimizedDayOff(day) ? 'optimized' : ''} {isConsecutiveDayOff(day) ? 'consecutive-day' : ''} {isPTO ? 'selected-pto' : ''}"
+            class="day 
+                {isWeekend(date) ? 'weekend' : ''} 
+                {holiday ? 'holiday' : ''} 
+                {isOptimizedDayOff(day) && !isStrategySuggested ? 'optimized' : ''} 
+                {isStrategySuggested ? 'strategy-suggested' : ''} 
+                {isConsecutiveDayOff(day) ? 'consecutive-day' : ''} 
+                {isPTO ? 'selected-pto' : ''}"
             on:click={() => handleDayClick(day)}
             on:keydown={(e) => e.key === 'Enter' && handleDayClick(day)}
             role="button"
@@ -192,6 +208,8 @@
                 <Tooltip text={holiday.name} />
             {:else if isPTO}
                 <Tooltip text={`Selected PTO Day`} />
+            {:else if isStrategySuggested}
+                <Tooltip text={`Suggested PTO Day`} />
             {:else if !isWeekend(date)}
                 <Tooltip text={`Available PTO: ${availablePTO !== undefined ? availablePTO.toFixed(1) : '0.0'} ${$ptoBalanceUnit || 'days'}`} />
             {/if}
@@ -256,6 +274,11 @@
     }
     .optimized {
         background-color: #4caf50;
+    }
+    .strategy-suggested {
+        background-color: #fff;
+        border: 2px solid black;
+        cursor: pointer;
     }
     .holiday {
         background-color: #7e57c2;

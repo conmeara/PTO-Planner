@@ -1,6 +1,7 @@
 <script lang="ts">
     import { holidays, optimizedDaysOff, weekendDays, consecutiveDaysOff } from '../../stores/holidayStore';
     import { selectedPTODays, currentPTOBalance, ptoBalanceUnit } from '../../stores/ptoStore';
+    import { selectedStrategy, strategySuggestedDays, strategyDescriptions } from '../../stores/strategyStore';
     import type { Holiday } from '../../types';
     import CountrySelector from '../settings/CountrySelector.svelte';
     import StateSelector from '../settings/StateSelector.svelte';
@@ -8,6 +9,7 @@
     import WeekendSettings from '../settings/WeekendSettings.svelte';
     import PTOBalanceSettings from '../settings/PTOBalanceSettings.svelte';
     import { createEventDispatcher } from 'svelte';
+    import { toggleSelectedPTODay } from '../../stores/ptoStore';
 
     // Define the active tab
     let activeTab = 'holiday'; // 'none', 'suggested', 'selected', 'weekend', 'holiday'
@@ -49,8 +51,28 @@
         return acc;
     }, {} as Record<number, Date[]>);
 
+    // Group strategy suggested days by month
+    $: suggestedByMonth = $strategySuggestedDays.reduce((acc, date) => {
+        const month = date.getMonth();
+        if (!acc[month]) acc[month] = [];
+        acc[month].push(date);
+        return acc;
+    }, {} as Record<number, Date[]>);
+
     // Calculate total consecutive days
     $: totalConsecutiveDays = $consecutiveDaysOff.reduce((total, group) => total + group.totalDays, 0);
+
+    // Add days to selected PTO
+    function addDayToMyPTO(day: Date) {
+        toggleSelectedPTODay(day);
+    }
+
+    // Add all suggested days to selected PTO
+    function applyAllSuggested() {
+        for (const day of $strategySuggestedDays) {
+            toggleSelectedPTODay(day);
+        }
+    }
 </script>
 
 <div class="legend-menu">
@@ -93,21 +115,52 @@
             {#if activeTab === 'suggested'}
                 <div class="menu-content">
                     <h3>Suggested PTO Days</h3>
-                    <p>These are the optimal days to take off to maximize your time off.</p>
-                    <p>Total suggested: <strong>{$optimizedDaysOff.length} days</strong></p>
-
-                    <div class="month-groups">
-                        {#each Object.entries(optimizedByMonth) as [month, dates]}
-                            <div class="month-group">
-                                <h4>{getMonthName(parseInt(month))}</h4>
-                                <ul class="date-list">
-                                    {#each dates as date}
-                                        <li>{formatDate(date)}</li>
-                                    {/each}
-                                </ul>
-                            </div>
-                        {/each}
+                    
+                    <div class="strategy-selector">
+                        <label for="strategy">Choose a Strategy:</label>
+                        <select id="strategy" bind:value={$selectedStrategy} class="strategy-select">
+                            {#each strategyDescriptions as strategy}
+                                <option value={strategy.id}>{strategy.name}</option>
+                            {/each}
+                        </select>
+                        
+                        {#if $selectedStrategy !== 'none'}
+                            <p class="strategy-description">
+                                {strategyDescriptions.find(s => s.id === $selectedStrategy)?.description}
+                            </p>
+                        {/if}
                     </div>
+
+                    {#if $selectedStrategy !== 'none' && $strategySuggestedDays.length > 0}
+                        <div class="suggested-actions">
+                            <p>Total suggested: <strong>{$strategySuggestedDays.length} days</strong></p>
+                            <button class="apply-all" on:click={applyAllSuggested}>
+                                Apply All to My PTO
+                            </button>
+                        </div>
+
+                        <div class="month-groups">
+                            {#each Object.entries(suggestedByMonth) as [month, dates]}
+                                <div class="month-group">
+                                    <h4>{getMonthName(parseInt(month))}</h4>
+                                    <ul class="date-list">
+                                        {#each dates as date}
+                                            <li>
+                                                {formatDate(date)}
+                                                <button class="add-day-btn" on:click={() => addDayToMyPTO(date)}>
+                                                    Add
+                                                </button>
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                </div>
+                            {/each}
+                        </div>
+                    {:else if $selectedStrategy === 'none'}
+                        <p>Please select a strategy to see suggested PTO days.</p>
+                    {:else}
+                        <p>No suggested days available for the selected strategy. Try a different strategy or adjust your PTO balance.</p>
+                    {/if}
                 </div>
             {:else if activeTab === 'selected'}
                 <div class="menu-content">
@@ -307,6 +360,9 @@
         padding: 4px 0;
         font-size: 0.9em;
         border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .date-list li.disabled {
@@ -374,6 +430,65 @@
         color: #777;
         text-align: center;
         margin: 20px 0;
+    }
+
+    /* Strategy selector styles */
+    .strategy-selector {
+        margin: 15px 0;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .strategy-select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        margin-top: 5px;
+        font-size: 0.9em;
+    }
+
+    .strategy-description {
+        margin-top: 10px;
+        font-style: italic;
+        color: #555;
+    }
+
+    .suggested-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 15px 0;
+    }
+
+    .apply-all {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.2s;
+    }
+
+    .apply-all:hover {
+        background-color: #388e3c;
+    }
+    
+    .add-day-btn {
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .add-day-btn:hover {
+        background-color: #e6e6e6;
     }
 
     @keyframes fadeIn {

@@ -2,6 +2,7 @@ import { writable, derived } from 'svelte/store';
 import type { Holiday, ConsecutiveDaysOff } from '../types';
 import { getHolidaysForYear, optimizeDaysOff, calculateConsecutiveDaysOff } from '../utils/holidayUtils';
 import { ptoData } from '../utils/ptoData';
+import { selectedPTODays } from './ptoStore';
 
 // Initial state
 export const year = writable<number>(new Date().getFullYear());
@@ -24,18 +25,19 @@ export const optimizedDaysOff = derived(
 );
 
 export const consecutiveDaysOff = derived(
-    [holidays, optimizedDaysOff, year, weekendDays],
-    ([$holidays, $optimizedDaysOff, $year, $weekendDays]) => {
+    [holidays, optimizedDaysOff, year, weekendDays, selectedPTODays],
+    ([$holidays, $optimizedDaysOff, $year, $weekendDays, $selectedPTODays]) => {
         const visibleHolidaysList = $holidays.filter(h => !h.hidden);
-        return calculateConsecutiveDaysOff(visibleHolidaysList, $optimizedDaysOff, $year, $weekendDays);
+        const selectedPTODates = $selectedPTODays.map(day => day.date instanceof Date ? day.date : new Date(day.date));
+        return calculateConsecutiveDaysOff(visibleHolidaysList, $optimizedDaysOff, $year, $weekendDays, selectedPTODates);
     }
 );
 
 // Actions
 export function updateHolidays(): void {
-    let countryCode: string;
-    let stateCode: string;
-    let currentYear: number;
+    let countryCode: string = '';
+    let stateCode: string = '';
+    let currentYear: number = new Date().getFullYear();
     
     // Get current values from stores
     selectedCountryCode.subscribe(value => countryCode = value)();

@@ -2,6 +2,7 @@
     import CalendarMonth from './CalendarMonth.svelte';
     import { holidays, optimizedDaysOff, consecutiveDaysOff, selectedCountryCode, weekendDays, year } from '../../stores/holidayStore';
     import { selectedPTODays, currentPTOBalance } from '../../stores/ptoStore';
+    import { strategySuggestedDays } from '../../stores/strategyStore';
     import CalendarLegendMenu from '../ui/CalendarLegendMenu.svelte';
 
     // Generate array of months (0-11)
@@ -27,6 +28,7 @@
                 month={month}
                 holidays={$holidays}
                 optimizedDaysOff={$optimizedDaysOff}
+                strategySuggestedDays={$strategySuggestedDays}
                 consecutiveDaysOff={$consecutiveDaysOff}
                 selectedCountryCode={$selectedCountryCode}
                 weekendDays={$weekendDays}

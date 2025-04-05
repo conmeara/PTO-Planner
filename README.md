@@ -26,6 +26,12 @@ This project was created to efficiently manage vacation days by aligning them wi
 
 - **Country-Specific Holidays**: Fetches public holidays for your country.
 - **Optimized Days Off**: Calculates the best use of personal leave days.
+- **PTO Strategies**: Multiple optimization strategies tailored for different needs:
+  - **Balanced Mix**: Distributes PTO evenly throughout the year
+  - **Long Weekends**: Focuses on extending weekends with 1-2 days off
+  - **Mini Breaks**: Creates multiple 5-6 day breaks throughout the year
+  - **Week-Long Breaks**: Organizes PTO for 7-9 day vacation periods
+  - **Extended Vacations**: Plans for one or two 10-15 day vacation periods
 - **Interactive Calendar**: Visualizes holidays and optimized days off.
 - **Responsive Design**: Compatible with desktop and mobile devices.
 
@@ -72,19 +78,25 @@ Access the application at `http://localhost:3000`. Enter your country to view pu
 
 ## Algorithm
 
-The algorithm optimizes personal leave days to maximize consecutive days off:
+The application offers multiple algorithms to optimize personal leave days:
 
 1. **Identify Public Holidays and Weekends**.
-2. **Find Gaps** between these days.
-3. **Rank Gaps** by efficiency.
-4. **Select Days Off** to fill gaps.
-5. **Calculate Consecutive Days Off**.
+2. **Apply Selected Strategy**:
+   - For long weekends: Find 1-2 day gaps adjacent to holidays/weekends
+   - For mini breaks: Look for clusters that can extend to 5-6 days
+   - For week-long breaks: Prioritize gaps around existing clusters
+   - For extended vacations: Focus on 1-2 periods for longer breaks
+3. **Find Gaps** between days off based on strategy.
+4. **Rank Gaps** by efficiency and strategy preferences.
+5. **Select Days Off** to fill gaps according to strategy.
+6. **Calculate Consecutive Days Off**.
 
 ```mermaid
 graph TD;
     A[Start] --> B[Identify Public Holidays and Weekends]
-    B --> C[Find Gaps Between Days Off]
-    C --> D[Rank Gaps by Efficiency]
+    B --> C1[Select PTO Strategy]
+    C1 --> C2[Find Gaps Based on Strategy]
+    C2 --> D[Rank Gaps by Strategy Preference]
     D --> E[Select Days Off to Fill Gaps]
     E --> F[Calculate Consecutive Days Off]
     F --> G[End]

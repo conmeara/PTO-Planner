@@ -5,7 +5,9 @@
     import HowItWorks from '../lib/components/layout/HowItWorks.svelte';
     import SettingsPanel from '../lib/components/settings/SettingsPanel.svelte';
     import CalendarGrid from '../lib/components/calendar/CalendarGrid.svelte';
-    import { selectedCountry, selectedCountryCode } from '../lib/stores/holidayStore';
+    import { selectedCountry, selectedCountryCode, initializeStores } from '../lib/stores/holidayStore';
+    import { initializePTOStores } from '../lib/stores/ptoStore';
+    import { initializeStrategyStore } from '../lib/stores/strategyStore';
 
     let showHowItWorks = false;
 
@@ -66,6 +68,10 @@
     }
 
     onMount(() => {
+        // Initialize all stores on app mount
+        initializeStores();
+        initializePTOStores();
+        initializeStrategyStore();
         fetchCountryCode();
     });
 </script>

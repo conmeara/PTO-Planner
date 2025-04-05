@@ -40,3 +40,21 @@ export interface PTOAccrualInfo {
     unit: 'days' | 'hours';
     frequency: 'weekly' | 'bi-weekly' | 'monthly';
 }
+
+// New types for PTO strategies
+export type StrategyType = 'none' | 'balanced' | 'long-weekends' | 'mini-breaks' | 'week-long' | 'extended';
+
+export interface StrategyInput {
+    year: number;
+    weekends: number[];
+    holidays: Holiday[];
+    ptoBalance: number;
+    accrualRate: number;
+    accrualFrequency: 'weekly' | 'bi-weekly' | 'monthly';
+}
+
+export interface StrategyDescription {
+    id: StrategyType;
+    name: string;
+    description: string;
+}
