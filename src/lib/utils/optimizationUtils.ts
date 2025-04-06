@@ -1,7 +1,25 @@
 import type { StrategyInput } from '../types';
 import { isWeekend, isHoliday, daysBetween, dateKey } from './holidayUtils';
+import { getAvailablePTOOnDate } from '../stores/ptoStore';
 
 const MS_IN_A_DAY = 86400000;
+
+/**
+ * Checks if there is enough PTO available for a given date
+ */
+function hasEnoughPTOForDate(date: Date): boolean {
+    const availablePTO = getAvailablePTOOnDate(date);
+    
+    // Only consider PTO available if there's at least 1 full day
+    // We could make this configurable if partial days are supported in the future
+    const hasEnough = availablePTO >= 1;
+    
+    if (!hasEnough) {
+        console.log(`Not enough PTO for ${date.toLocaleDateString()} - Balance: ${availablePTO.toFixed(1)}`);
+    }
+    
+    return hasEnough;
+}
 
 /**
  * Generates a Balanced Mix of days throughout the year
@@ -102,10 +120,13 @@ export function getExtendedVacationsDays(input: StrategyInput): Date[] {
             // Add up to 10 days per break, or less if not enough PTO
             const daysToUse = Math.min(10, remainingPTO, workdays.length);
             
-            // Add the workdays to the result
+            // Add the workdays to the result, but check PTO availability first
             for (let j = 0; j < daysToUse; j++) {
-                result.push(workdays[j]);
-                remainingPTO--;
+                const day = workdays[j];
+                if (hasEnoughPTOForDate(day)) {
+                    result.push(day);
+                    remainingPTO--;
+                }
             }
         }
     }
@@ -230,9 +251,12 @@ function selectDaysForStrategy(
             day.setDate(day.getDate() + (i * increment));
             
             if (!allDaysOff.has(dateKey(day)) && !isWeekend(day, weekendDays)) {
-                selectedDays.push(day);
-                remainingDays--;
-                if (remainingDays <= 0) break;
+                // Check if enough PTO is available on this day according to the ledger
+                if (hasEnoughPTOForDate(day)) {
+                    selectedDays.push(day);
+                    remainingDays--;
+                    if (remainingDays <= 0) break;
+                }
             }
         }
     }

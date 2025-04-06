@@ -58,3 +58,39 @@ export interface StrategyDescription {
     name: string;
     description: string;
 }
+
+// New types for multi-year PTO tracking
+export interface DailyLedgerEntry {
+    balance: number;
+    transactions?: PtoTransaction[]; // Added to track transactions affecting this day
+}
+
+export interface HolidaysByYear {
+    [year: number]: Holiday[];
+}
+
+export interface CarryoverOptions {
+    enabled: boolean;
+    maxDays: number; // Maximum days/hours that can be carried over
+    expiryDate?: Date; // Optional date when carried over PTO expires
+}
+
+export interface MultiYearConfig {
+    visibleYears: number[];
+    carryover: CarryoverOptions;
+}
+
+// New transaction-based PTO tracking
+export interface PtoTransaction {
+    date: Date;
+    type: 'accrual' | 'usage' | 'carryover' | 'adjustment';
+    amount: number; // Positive for accrual/carryover, negative for usage
+    note?: string;  // Optional description
+}
+
+// New interface for pay period template
+export interface PayPeriodTemplate {
+    frequency: 'weekly' | 'bi-weekly' | 'monthly';
+    weekday?: number; // 0-6 for weekly/bi-weekly (0 = Sunday)
+    dayOfMonth?: number; // 1-31 for monthly
+}

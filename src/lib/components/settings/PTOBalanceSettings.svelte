@@ -1,12 +1,8 @@
 <script lang="ts">
     import {
-        ptoBalance,
-        ptoBalanceUnit,
-        ptoBalanceAsOfDate,
-        ptoAccrualRate,
-        ptoAccrualUnit,
-        ptoAccrualFrequency,
-        currentPTOBalance
+        ptoConfig,
+        currentPTOTodayBalance,
+        getAvailablePTOOnDate
     } from '../../stores/ptoStore';
 
     // Format date for input
@@ -22,7 +18,10 @@
         const target = event.target as HTMLInputElement;
         const dateValue = target.value;
         if (dateValue) {
-            ptoBalanceAsOfDate.set(new Date(dateValue));
+            ptoConfig.update(config => ({
+                ...config,
+                asOfDate: new Date(dateValue)
+            }));
         }
     }
 
@@ -30,7 +29,70 @@
     const today = formatDateForInput(new Date());
 
     // Bind date value
-    $: asOfDateValue = formatDateForInput($ptoBalanceAsOfDate);
+    $: asOfDateValue = formatDateForInput($ptoConfig.asOfDate);
+    
+    // Calculate end-of-year balance for display
+    $: endOfYearDate = new Date(new Date().getFullYear(), 11, 31); // December 31st
+    $: endOfYearBalance = getAvailablePTOOnDate(endOfYearDate);
+
+    // Handle individual field updates
+    function updateBalance(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const value = parseFloat(target.value);
+        if (!isNaN(value)) {
+            console.log(`Updating initial balance to ${value}`);
+            ptoConfig.update(config => ({
+                ...config,
+                initialBalance: value
+            }));
+            
+            // Force a recalculation of the ledger
+            setTimeout(() => {
+                console.log(`Current PTO balance after update: ${$currentPTOTodayBalance}`);
+            }, 50);
+        }
+    }
+
+    function updateBalanceUnit(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        console.log(`Updating balance unit to ${target.value}`);
+        ptoConfig.update(config => ({
+            ...config,
+            balanceUnit: target.value as 'days' | 'hours'
+        }));
+    }
+
+    function updateAccrualRate(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const value = parseFloat(target.value);
+        if (!isNaN(value)) {
+            console.log(`Updating accrual rate to ${value}`);
+            ptoConfig.update(config => ({
+                ...config,
+                accrualRate: value
+            }));
+        }
+    }
+
+    function updateAccrualUnit(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        ptoConfig.update(config => ({
+            ...config,
+            accrualUnit: target.value as 'days' | 'hours'
+        }));
+    }
+
+    function updateAccrualFrequency(event: Event) {
+        const target = event.target as HTMLSelectElement;
+        ptoConfig.update(config => ({
+            ...config,
+            accrualFrequency: target.value as 'weekly' | 'bi-weekly' | 'monthly',
+            payPeriodTemplate: {
+                ...($ptoConfig.payPeriodTemplate || {}),
+                frequency: target.value as 'weekly' | 'bi-weekly' | 'monthly'
+            }
+        }));
+    }
 </script>
 
 <div class="pto-balance-settings">
@@ -43,12 +105,17 @@
                 type="number"
                 id="ptoBalance"
                 class="editable-input"
-                bind:value={$ptoBalance}
+                value={$ptoConfig.initialBalance}
+                on:input={updateBalance}
                 min="0"
                 step="0.5"
                 aria-label="PTO Balance"
             />
-            <select bind:value={$ptoBalanceUnit} aria-label="PTO Balance Unit">
+            <select 
+                value={$ptoConfig.balanceUnit} 
+                on:change={updateBalanceUnit}
+                aria-label="PTO Balance Unit"
+            >
                 <option value="days">days</option>
                 <option value="hours">hours</option>
             </select>
@@ -77,12 +144,17 @@
                 type="number"
                 id="ptoAccrualRate"
                 class="editable-input"
-                bind:value={$ptoAccrualRate}
+                value={$ptoConfig.accrualRate}
+                on:input={updateAccrualRate}
                 min="0"
                 step="0.5"
                 aria-label="PTO Accrual Rate"
             />
-            <select bind:value={$ptoAccrualUnit} aria-label="PTO Accrual Unit">
+            <select 
+                value={$ptoConfig.accrualUnit}
+                on:change={updateAccrualUnit}
+                aria-label="PTO Accrual Unit"
+            >
                 <option value="days">days</option>
                 <option value="hours">hours</option>
             </select>
@@ -94,7 +166,8 @@
         <select
             id="ptoAccrualFrequency"
             class="editable-input"
-            bind:value={$ptoAccrualFrequency}
+            value={$ptoConfig.accrualFrequency}
+            on:change={updateAccrualFrequency}
             aria-label="PTO Accrual Frequency"
         >
             <option value="weekly">Weekly</option>
@@ -105,7 +178,8 @@
 
     <div class="current-balance">
         <h4>Current Available PTO:</h4>
-        <p class="balance-display">{$currentPTOBalance !== undefined ? $currentPTOBalance.toFixed(1) : '0.0'} {$ptoBalanceUnit || 'days'}</p>
+        <p class="balance-display">{$currentPTOTodayBalance !== undefined ? $currentPTOTodayBalance.toFixed(1) : '0.0'} {$ptoConfig.balanceUnit || 'days'}</p>
+        <p class="projected-balance">Projected by Dec 31: {endOfYearBalance.toFixed(1)} {$ptoConfig.balanceUnit}</p>
     </div>
 </div>
 
@@ -181,6 +255,13 @@
         font-size: 1.5em;
         font-weight: bold;
         color: #4caf50;
+        margin: 5px 0;
+    }
+
+    .projected-balance {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #555;
         margin: 5px 0;
     }
 </style>

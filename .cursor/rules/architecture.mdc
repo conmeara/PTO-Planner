@@ -31,11 +31,24 @@ alwaysApply: true
 
 ## Data Management
 - State management through Svelte stores in `src/lib/stores/`
-  - `ptoStore.ts` - Manages PTO data and calculations
-  - `holidayStore.ts` - Manages holiday data and country selections
+  - `ptoStore.ts` - Manages PTO data, calculations, and multi-year configuration
+  - `holidayStore.ts` - Manages holiday data across multiple years and country selections
+  - `strategyStore.ts` - Manages PTO optimization strategies
 - Data utility functions:
-  - `src/lib/utils/ptoData.ts` - PTO calculation algorithms
+  - `src/lib/utils/ptoEngine.ts` - PTO calculation algorithms and multi-year ledger management
   - `src/lib/utils/holidayUtils.ts` - Holiday data processing
+  - `src/lib/utils/optimizationUtils.ts` - Strategy-based PTO optimization algorithms
+
+## Multi-Year PTO Tracking
+- Support for calculating PTO across multiple years:
+  - Year selection UI in CalendarGrid component
+  - Multi-year ledger in ptoEngine with carryover rules
+  - Visible years tracking in ptoStore
+  - Year-specific holiday caching in holidayStore
+- Key components and files:
+  - `MultiYearSettings.svelte` - UI for configuring visible years and carryover settings
+  - `ptoEngine.ts` - Core logic for multi-year calculations with carryover support
+  - Enhancements to existing stores for managing data across years
 
 ## Routes
 - Main application page at `src/routes/+page.svelte`
@@ -43,7 +56,21 @@ alwaysApply: true
 
 ## Types
 - Type definitions in `src/lib/types/index.ts`
-- Includes interfaces for holidays, PTO data, and application state
+- Includes interfaces for holidays, PTO data, strategies, application state, and multi-year configuration
+
+## PTO Optimization Strategies
+- Different strategies for optimizing PTO usage:
+  - Balanced Mix - Distributes PTO evenly throughout the year
+  - Long Weekends - Focuses on extending weekends with 1-2 days
+  - Mini Breaks - Creates multiple 5-6 day breaks
+  - Week-Long Breaks - Organizes PTO for 7-9 day vacation periods
+  - Extended Vacations - Plans for longer 10-15 day vacation periods
+- Implementation:
+  - Strategy types and interfaces in `src/lib/types/index.ts`
+  - Strategy selection store in `src/lib/stores/strategyStore.ts`
+  - Strategy algorithms in `src/lib/utils/optimizationUtils.ts`
+  - UI selection in `src/lib/components/ui/CalendarLegendMenu.svelte`
+  - Calendar visualization in `src/lib/components/calendar/CalendarMonth.svelte`
 
 ## Dependencies
 - External libraries:

@@ -8,7 +8,7 @@ import {
     getExtendedVacationsDays 
 } from '../utils/optimizationUtils';
 import { holidays, year, weekendDays } from './holidayStore';
-import { ptoBalance, ptoAccrualRate, ptoAccrualFrequency } from './ptoStore';
+import { ptoConfig } from './ptoStore';
 
 // Strategy descriptions
 export const strategyDescriptions: StrategyDescription[] = [
@@ -49,8 +49,8 @@ export const selectedStrategy = writable<StrategyType>('none');
 
 // Derived store for suggested days based on the selected strategy
 export const strategySuggestedDays = derived(
-    [selectedStrategy, year, holidays, ptoBalance, ptoAccrualRate, ptoAccrualFrequency, weekendDays],
-    ([$selectedStrategy, $year, $holidays, $ptoBalance, $ptoAccrualRate, $ptoAccrualFrequency, $weekendDays]) => {
+    [selectedStrategy, year, holidays, ptoConfig, weekendDays],
+    ([$selectedStrategy, $year, $holidays, $ptoConfig, $weekendDays]) => {
         if ($selectedStrategy === 'none') return [];
 
         // Construct a StrategyInput object
@@ -58,9 +58,9 @@ export const strategySuggestedDays = derived(
             year: $year,
             weekends: $weekendDays,
             holidays: $holidays.filter(h => !h.hidden),
-            ptoBalance: $ptoBalance,
-            accrualRate: $ptoAccrualRate,
-            accrualFrequency: $ptoAccrualFrequency
+            ptoBalance: $ptoConfig.initialBalance,
+            accrualRate: $ptoConfig.accrualRate,
+            accrualFrequency: $ptoConfig.accrualFrequency
         };
 
         // Switch or map the strategy to the correct function

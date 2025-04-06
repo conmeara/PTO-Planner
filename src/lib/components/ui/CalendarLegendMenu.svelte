@@ -1,6 +1,6 @@
 <script lang="ts">
     import { holidays, optimizedDaysOff, weekendDays, consecutiveDaysOff } from '../../stores/holidayStore';
-    import { selectedPTODays, currentPTOBalance, ptoBalanceUnit } from '../../stores/ptoStore';
+    import { selectedPTODays, currentPTOTodayBalance, ptoConfig, getAvailablePTOOnDate } from '../../stores/ptoStore';
     import { selectedStrategy, strategySuggestedDays, strategyDescriptions } from '../../stores/strategyStore';
     import type { Holiday } from '../../types';
     import CountrySelector from '../settings/CountrySelector.svelte';
@@ -8,11 +8,14 @@
     import YearSelector from '../settings/YearSelector.svelte';
     import WeekendSettings from '../settings/WeekendSettings.svelte';
     import PTOBalanceSettings from '../settings/PTOBalanceSettings.svelte';
+    import MultiYearSettings from '../settings/MultiYearSettings.svelte';
+    import PayPeriodSettings from '../settings/PayPeriodSettings.svelte';
+    import PTOCalculationTest from '../settings/PTOCalculationTest.svelte';
     import { createEventDispatcher } from 'svelte';
     import { toggleSelectedPTODay } from '../../stores/ptoStore';
 
     // Define the active tab
-    let activeTab = 'holiday'; // 'none', 'suggested', 'selected', 'weekend', 'holiday'
+    let activeTab = 'holiday'; // 'none', 'suggested', 'selected', 'weekend', 'holiday', 'multi-year', 'pto-calculation'
 
     // Create event dispatcher
     const dispatch = createEventDispatcher();
@@ -62,16 +65,13 @@
     // Calculate total consecutive days
     $: totalConsecutiveDays = $consecutiveDaysOff.reduce((total, group) => total + group.totalDays, 0);
 
+    // Calculate end-of-year balance for display
+    $: endOfYearDate = new Date(new Date().getFullYear(), 11, 31); // December 31st
+    $: endOfYearBalance = getAvailablePTOOnDate(endOfYearDate);
+
     // Add days to selected PTO
     function addDayToMyPTO(day: Date) {
         toggleSelectedPTODay(day);
-    }
-
-    // Add all suggested days to selected PTO
-    function applyAllSuggested() {
-        for (const day of $strategySuggestedDays) {
-            toggleSelectedPTODay(day);
-        }
     }
 </script>
 
@@ -108,6 +108,22 @@
             <span class="color-box holiday"></span>
             <span>Public Holiday</span>
         </button>
+
+        <button
+            class="tab-item multi-year {activeTab === 'multi-year' ? 'active' : ''}"
+            on:click={() => toggleTab('multi-year')}
+        >
+            <span class="color-box multi-year"></span>
+            <span>Multi-Year</span>
+        </button>
+        
+        <button
+            class="tab-item pto-calculation {activeTab === 'pto-calculation' ? 'active' : ''}"
+            on:click={() => toggleTab('pto-calculation')}
+        >
+            <span class="color-box pto-calculation"></span>
+            <span>PTO Calculation</span>
+        </button>
     </div>
 
     {#if activeTab !== 'none'}
@@ -134,27 +150,7 @@
                     {#if $selectedStrategy !== 'none' && $strategySuggestedDays.length > 0}
                         <div class="suggested-actions">
                             <p>Total suggested: <strong>{$strategySuggestedDays.length} days</strong></p>
-                            <button class="apply-all" on:click={applyAllSuggested}>
-                                Apply All to My PTO
-                            </button>
-                        </div>
-
-                        <div class="month-groups">
-                            {#each Object.entries(suggestedByMonth) as [month, dates]}
-                                <div class="month-group">
-                                    <h4>{getMonthName(parseInt(month))}</h4>
-                                    <ul class="date-list">
-                                        {#each dates as date}
-                                            <li>
-                                                {formatDate(date)}
-                                                <button class="add-day-btn" on:click={() => addDayToMyPTO(date)}>
-                                                    Add
-                                                </button>
-                                            </li>
-                                        {/each}
-                                    </ul>
-                                </div>
-                            {/each}
+                            <p>View suggested days directly in the calendar below.</p>
                         </div>
                     {:else if $selectedStrategy === 'none'}
                         <p>Please select a strategy to see suggested PTO days.</p>
@@ -182,8 +178,9 @@
 
                     <div class="selected-pto-days">
                         <h3>Selected PTO Days</h3>
-                        <p>Total selected: <strong>{$selectedPTODays.length} {$ptoBalanceUnit}</strong></p>
-                        <p>Current available: <strong>{$currentPTOBalance.toFixed(1)} {$ptoBalanceUnit}</strong></p>
+                        <p>Total selected: <strong>{$selectedPTODays.length} {$ptoConfig.balanceUnit}</strong></p>
+                        <p>Current available: <strong>{$currentPTOTodayBalance.toFixed(1)} {$ptoConfig.balanceUnit}</strong></p>
+                        <p>Projected by Dec 31: <strong>{endOfYearBalance.toFixed(1)} {$ptoConfig.balanceUnit}</strong></p>
 
                         {#if $selectedPTODays.length > 0}
                             <div class="month-groups">
@@ -247,6 +244,29 @@
                             </div>
                         {/each}
                     </div>
+                </div>
+            {:else if activeTab === 'multi-year'}
+                <div class="menu-content">
+                    <h3>Multi-Year PTO Settings</h3>
+                    <p>Configure multi-year PTO tracking and carryover rules.</p>
+                    <MultiYearSettings />
+                </div>
+            {:else if activeTab === 'pto-calculation'}
+                <div class="menu-content">
+                    <h3>PTO Calculation Settings</h3>
+                    <p>Configure how your PTO accrues for more accurate calculations.</p>
+                    
+                    <div class="pto-calculation-settings">
+                        <PayPeriodSettings />
+                    </div>
+                    
+                    <div class="pto-balance-summary">
+                        <h4>PTO Balance Summary</h4>
+                        <p>Current available: <strong>{$currentPTOTodayBalance.toFixed(1)} {$ptoConfig.balanceUnit}</strong></p>
+                        <p>Projected by Dec 31: <strong>{endOfYearBalance.toFixed(1)} {$ptoConfig.balanceUnit}</strong></p>
+                    </div>
+                    
+                    <PTOCalculationTest />
                 </div>
             {/if}
         </div>
@@ -315,6 +335,14 @@
     .consecutive-day {
         background-color: #fff;
         border: 1px solid rgba(0, 0, 0, 0.3);
+    }
+    
+    .multi-year {
+        background-color: #ff9800;
+    }
+    
+    .pto-calculation {
+        background-color: #2196f3;
     }
 
     .edit-menu {
@@ -490,6 +518,17 @@
     .add-day-btn:hover {
         background-color: #e6e6e6;
     }
+    
+    .pto-calculation-settings {
+        margin-bottom: 20px;
+    }
+    
+    .pto-balance-summary {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+    }
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
@@ -504,11 +543,6 @@
 
         .tab-item {
             width: 100%;
-            justify-content: flex-start;
-        }
-
-        .month-groups {
-            grid-template-columns: 1fr;
         }
     }
 </style>

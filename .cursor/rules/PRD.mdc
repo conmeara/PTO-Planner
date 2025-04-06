@@ -1,7 +1,7 @@
 ---
-description: Product Requirements Document outlines the requirements and functionality of the product
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Product Requirements Document
 
