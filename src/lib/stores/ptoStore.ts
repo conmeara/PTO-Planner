@@ -26,6 +26,9 @@ export const ptoConfig = writable<PtoEngineConfig>({
 // Selected PTO Days Store
 export const selectedPTODays = writable<SelectedPTODay[]>([]);
 
+// Ledger version counter to force UI updates
+export const ledgerVersion = writable<number>(0);
+
 // Derived store for the daily PTO ledger using the PtoEngine
 export const dailyPTOLedger = derived(
     [ptoConfig, selectedPTODays],
@@ -45,17 +48,17 @@ export const dailyPTOLedger = derived(
             console.log(`Visible years: ${$ptoConfig.visibleYears.join(', ')}`);
             console.log(`Carryover enabled: ${$ptoConfig.carryover.enabled}, Max: ${$ptoConfig.carryover.maxDays === Infinity ? 'unlimited' : $ptoConfig.carryover.maxDays}`);
             console.log(`Pay period: ${$ptoConfig.payPeriodTemplate?.frequency} (${
-                $ptoConfig.payPeriodTemplate?.frequency === 'monthly' 
-                    ? `Day ${$ptoConfig.payPeriodTemplate?.dayOfMonth}` 
+                $ptoConfig.payPeriodTemplate?.frequency === 'monthly'
+                    ? `Day ${$ptoConfig.payPeriodTemplate?.dayOfMonth}`
                     : `Weekday ${$ptoConfig.payPeriodTemplate?.weekday}`
             })`);
-            
+
             // Create engine instance with the current configuration
             const engine = new PtoEngine($ptoConfig);
-            
+
             // Build the ledger with selected PTO days
             const ledger = engine.buildLedger($selectedPTODays);
-            
+
             // Log sample balances for debugging
             $ptoConfig.visibleYears.forEach(year => {
                 console.log(`Sample balances for ${year}:`);
@@ -66,7 +69,7 @@ export const dailyPTOLedger = derived(
                     new Date(year, 9, 1),  // October 1
                     new Date(year, 11, 31) // December 31
                 ];
-                
+
                 dates.forEach(date => {
                     const dateKey = toYYYYMMDD(date);
                     if (ledger[dateKey]) {
@@ -75,7 +78,7 @@ export const dailyPTOLedger = derived(
                     }
                 });
             });
-            
+
             console.log("------------------------------------------");
             return ledger;
         } catch (e) {
@@ -126,8 +129,8 @@ export function getAvailablePTOOnDate(date: Date): number {
     checkDate.setHours(0, 0, 0, 0);
     const balance = engine.getBalanceOnDate(ledger, checkDate);
 
-    // Optional log for debugging balance checks
-    // console.log(`Balance check for ${toYYYYMMDD(checkDate)}: ${balance.toFixed(2)}`);
+    // Log for debugging balance checks
+    console.log(`Balance check for ${toYYYYMMDD(checkDate)}: ${balance.toFixed(2)} ${config.balanceUnit}`);
     return balance;
 }
 
@@ -157,7 +160,7 @@ export function initializePTOStores(): void {
             weekday: 5 // Friday
         }
     });
-    
+
     selectedPTODays.set([]);
 
     // Then load from localStorage if available
@@ -173,11 +176,11 @@ export function initializePTOStores(): void {
             const storedSelectedPTODays = localStorage.getItem('selectedPTODays');
             const storedMultiYearConfig = localStorage.getItem('multiYearConfig');
             const storedPayPeriodTemplate = localStorage.getItem('payPeriodTemplate');
-            
+
             // Update ptoConfig with stored values
             ptoConfig.update(config => {
                 const updatedConfig = { ...config };
-                
+
                 if (storedPTOBalance) {
                     updatedConfig.initialBalance = parseFloat(storedPTOBalance);
                 }
@@ -204,27 +207,27 @@ export function initializePTOStores(): void {
                 if (storedPayPeriodTemplate) {
                     updatedConfig.payPeriodTemplate = JSON.parse(storedPayPeriodTemplate);
                 }
-                
+
                 return updatedConfig;
             });
-            
+
             // Update selected PTO days
             if (storedSelectedPTODays) {
                 try {
                     const ptoDays = JSON.parse(storedSelectedPTODays);
-                    
+
                     // Convert date strings to Date objects
                     const processedPtoDays = ptoDays.map((day: any) => ({
                         date: new Date(day.date)
                     }));
-                    
+
                     selectedPTODays.set(processedPtoDays);
                 } catch (e) {
                     console.error('Error parsing stored selected PTO days:', e);
                     selectedPTODays.set([]);
                 }
             }
-            
+
             console.log('PTO configuration loaded from localStorage');
         } catch (e) {
             console.error('Error loading PTO data from localStorage:', e);
@@ -248,7 +251,7 @@ if (typeof window !== 'undefined') {
         }));
         localStorage.setItem('payPeriodTemplate', JSON.stringify(value.payPeriodTemplate));
     });
-    
+
     selectedPTODays.subscribe(value => {
         localStorage.setItem('selectedPTODays', JSON.stringify(value));
     });
@@ -262,6 +265,11 @@ export function toggleSelectedPTODay(date: Date): void {
     // Get current state synchronously using get()
     const currentConfig = get(ptoConfig);
     const currentSelectedDays = get(selectedPTODays);
+    const currentLedger = get(dailyPTOLedger);
+
+    // Log the current balance before any changes
+    const beforeBalance = getAvailablePTOOnDate(new Date());
+    console.log(`Current PTO balance before toggle: ${beforeBalance.toFixed(2)} ${currentConfig.balanceUnit}`);
 
     // Check if the target date is already selected
     const isCurrentlySelected = currentSelectedDays.some(day => sameDay(day.date, targetDate));
@@ -327,8 +335,15 @@ Required: ${usageAmount.toFixed(2)} ${currentConfig.balanceUnit}`;
         console.log(`Selected days count after addition: ${get(selectedPTODays).length}`);
     }
 
-    // Note: The 'dailyPTOLedger' derived store will automatically recalculate
-    // due to the change in 'selectedPTODays'. No need for manual triggering.
+    // Increment the ledger version to force UI updates
+    ledgerVersion.update(v => v + 1);
+
+    // Wait a short time and then log the new balance for comparison
+    setTimeout(() => {
+        const afterBalance = getAvailablePTOOnDate(new Date());
+        console.log(`Current PTO balance after toggle: ${afterBalance.toFixed(2)} ${currentConfig.balanceUnit}`);
+        console.log(`Balance change: ${(afterBalance - beforeBalance).toFixed(2)} ${currentConfig.balanceUnit}`);
+    }, 50);
 }
 
 // Check if a date is a selected PTO day
@@ -372,15 +387,15 @@ export function updateInitialPTOBalance(balance: number): void {
         ...config,
         initialBalance: balance
     }));
-    
+
     // Log the update
     console.log(`Updated initial PTO balance to ${balance}`);
-    
+
     // Force a recalculation
     let currentBalance = 0;
     currentPTOTodayBalance.subscribe(value => {
         currentBalance = value;
     })();
-    
+
     console.log(`New current PTO balance: ${currentBalance}`);
 }

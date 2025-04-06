@@ -1,9 +1,9 @@
 <script lang="ts">
     import Tooltip from '../ui/Tooltip.svelte';
     import type { Holiday, ConsecutiveDaysOff } from '../../types';
-    import { isSelectedPTODay, toggleSelectedPTODay, getAvailablePTOOnDate, ptoConfig, selectedPTODays, dailyPTOLedger } from '../../stores/ptoStore';
+    import { toggleSelectedPTODay, getAvailablePTOOnDate, ptoConfig, selectedPTODays, dailyPTOLedger, ledgerVersion as globalLedgerVersion } from '../../stores/ptoStore';
     import { createEventDispatcher } from 'svelte';
-    import { onDestroy } from 'svelte';
+    import { onDestroy, tick } from 'svelte';
     import { holidays as allHolidays, weekendDays as allWeekendDays } from '../../stores/holidayStore';
     import { calculateConsecutiveDaysOff } from '../../utils/holidayUtils';
     import { toYYYYMMDD } from '../../utils/ptoEngine';
@@ -38,40 +38,56 @@
     });
 
     // Track the PTO ledger to force updates when it changes
-    let ledgerVersion = 0;
+    let localLedgerVersion = 0;
     const unsubscribeLedger = dailyPTOLedger.subscribe(ledger => {
-        ledgerVersion++;
-        console.log(`CalendarMonth: PTO ledger updated, version ${ledgerVersion}`);
-        
+        localLedgerVersion++;
+        console.log(`CalendarMonth: PTO ledger updated, version ${localLedgerVersion}`);
+
         // Force a refresh of the selected days display
         const today = new Date();
         if (today.getFullYear() === year && today.getMonth() === month) {
             console.log("Refreshing calendar display for current month");
-            
+
             // This will trigger re-rendering of days
-            setTimeout(() => {
-                selectedDaysCount = localSelectedPTODays.length;
-            }, 50);
+            refreshCalendarDisplay();
         }
     });
+
+    // Also subscribe to the global ledger version counter
+    const unsubscribeGlobalVersion = globalLedgerVersion.subscribe(version => {
+        console.log(`CalendarMonth: Global ledger version updated to ${version}`);
+        refreshCalendarDisplay();
+    });
+
+    // Helper function to refresh the calendar display
+    async function refreshCalendarDisplay() {
+        // Wait for the next tick to ensure all reactive updates have been applied
+        await tick();
+
+        // Force reactivity by updating these values
+        const updatedSelectedDaysCount = localSelectedPTODays.length;
+        availablePTOAtMonthStart = getAvailablePTOOnDate(monthStartDate);
+        availablePTOAtMonthEnd = getAvailablePTOOnDate(monthEndDate);
+
+        console.log(`Calendar refreshed - Month: ${month+1}/${year}, Start PTO: ${availablePTOAtMonthStart.toFixed(1)}, End PTO: ${availablePTOAtMonthEnd.toFixed(1)}, Selected days: ${updatedSelectedDaysCount}`);
+    }
 
     // Cleanup subscription when component is destroyed
     onDestroy(() => {
         unsubscribePTO();
         unsubscribeLedger();
+        unsubscribeGlobalVersion();
     });
 
     // Calculate available PTO at the beginning and end of the month
     $: monthStartDate = new Date(year, month, 1);
-    // Day 0 of the current month gives the last day of the previous month
-    $: dayBeforeMonthStart = new Date(year, month, 0); 
     $: monthEndDate = new Date(year, month + 1, 0); // Last day of month
-    $: availablePTOAtMonthStart = getAvailablePTOOnDate(dayBeforeMonthStart); // Use balance from the day before
+    $: availablePTOAtMonthStart = getAvailablePTOOnDate(monthStartDate); // Use balance from the first day of the month
     $: availablePTOAtMonthEnd = getAvailablePTOOnDate(monthEndDate); // End balance uses the last day of the current month
-    
+
     // Count PTO days used in this month
-    $: ptoDaysUsedInMonth = $selectedPTODays.filter(day => 
-        day.date.getFullYear() === year && 
+    $: ptoDaysUsedInMonth = $selectedPTODays.filter(day =>
+        day.date.getFullYear() === year &&
         day.date.getMonth() === month
     ).length;
 
@@ -79,18 +95,18 @@
     $: {
         // Log the specific selected days being counted for this month
         if (month === 6 && year === new Date().getFullYear()) { // Log only for July of current year for debugging
-             const daysInMonth = $selectedPTODays.filter(day => 
-                day.date.getFullYear() === year && 
+             const daysInMonth = $selectedPTODays.filter(day =>
+                day.date.getFullYear() === year &&
                 day.date.getMonth() === month
             );
-            console.log(`DEBUG (July ${year}): Filtered selectedPTODays for count:`, 
-                daysInMonth.map(d => d.date.toDateString()), 
+            console.log(`DEBUG (July ${year}): Filtered selectedPTODays for count:`,
+                daysInMonth.map(d => d.date.toDateString()),
                 `Count: ${daysInMonth.length}`
             );
         }
 
         const monthKey = toYYYYMMDD(monthStartDate);
-        console.log(`Month: ${monthStartDate.toLocaleString('default', { month: 'long' })}, Key: ${monthKey}, Start Balance: ${availablePTOAtMonthStart}, End Balance: ${availablePTOAtMonthEnd}, Used: ${ptoDaysUsedInMonth}, Ledger Version: ${ledgerVersion}`);
+        console.log(`Month: ${monthStartDate.toLocaleString('default', { month: 'long' })}, Key: ${monthKey}, Start Balance: ${availablePTOAtMonthStart}, End Balance: ${availablePTOAtMonthEnd}, Used: ${ptoDaysUsedInMonth}, Ledger Version: ${localLedgerVersion}`);
     }
 
     // Function to determine the first day of the week based on locale
@@ -175,9 +191,9 @@
     function isSelectedPTO(day: number): boolean {
         const date = new Date(year, month, day);
         // Check directly from the selectedPTODays store
-        return $selectedPTODays.some(ptoDay => 
-            ptoDay.date.getFullYear() === date.getFullYear() && 
-            ptoDay.date.getMonth() === date.getMonth() && 
+        return $selectedPTODays.some(ptoDay =>
+            ptoDay.date.getFullYear() === date.getFullYear() &&
+            ptoDay.date.getMonth() === date.getMonth() &&
             ptoDay.date.getDate() === date.getDate()
         );
     }
@@ -187,31 +203,50 @@
         // Don't allow selecting weekends or holidays as PTO days
         if (!isWeekend(date) && !getHoliday(day)) {
             console.log(`Clicking day ${date.toLocaleDateString()}`);
-            
+
+            // Log the current PTO balance before toggling
+            const beforeBalance = getAvailablePTO(day);
+            console.log(`Before toggle, available PTO on ${date.toLocaleDateString()}: ${beforeBalance.toFixed(1)} ${$ptoConfig.balanceUnit}`);
+
             // Toggle PTO status
             toggleSelectedPTODay(date);
-            
+
             // Force reactivity update by creating a new reference
             // This is not strictly necessary with our subscription, but provides a backup
             localSelectedPTODays = [...localSelectedPTODays];
-            
+
             // Dispatch event to notify parent components
             dispatch('daySelected', { date, isSelected: isSelectedPTO(day) });
-            
+
             // Log current state after update
             console.log(`After click, day ${date.toLocaleDateString()} selection state: ${isSelectedPTO(day)}`);
-            
+
             // Force a re-render by updating a reactive variable
-            selectedDaysCount = localSelectedPTODays.length;
+            localSelectedPTODays = [...localSelectedPTODays]; // This will trigger reactivity
+
+            // Schedule a refresh of the calendar display
+            setTimeout(() => refreshCalendarDisplay(), 100);
         }
     }
 
     function getAvailablePTO(day: number): number {
         const date = new Date(year, month, day);
+        const balance = getAvailablePTOOnDate(date);
+        // Log for debugging specific days
+        if (date.getDate() === 1 || date.getDate() === 15) {
+            console.log(`Available PTO for ${date.toLocaleDateString()}: ${balance.toFixed(1)} ${$ptoConfig.balanceUnit}`);
+        }
+        return balance;
+    }
+
+    // Calculate PTO balance after accounting for selected PTO days
+    function getAdjustedPTOBalance(date) {
+        // The getAvailablePTOOnDate function already accounts for all selected PTO days
+        // because it uses the ledger which includes all PTO transactions
         return getAvailablePTOOnDate(date);
     }
 
-    function isWeekend(date: Date): boolean {
+    function isWeekend(date) {
         return weekendDays.includes(date.getDay());
     }
 
@@ -219,34 +254,33 @@
 
     $: orderedDayInitials = dayInitials.slice(firstDayOfWeek).concat(dayInitials.slice(0, firstDayOfWeek));
 
-    // Make sure isSelectedPTO uses the updated localSelectedPTODays
-    $: selectedDaysCount = localSelectedPTODays.length;
+    // We use localSelectedPTODays directly for reactivity
 
     // Function to calculate consecutive days off if a specific suggested day is added
-    function getPotentialConsecutiveDays(suggestedDate: Date): number {
+    function getPotentialConsecutiveDays(suggestedDate) {
         // Create a copy of currently selected PTO days
         const potentialPTODays = [
             ...localSelectedPTODays,
             suggestedDate
         ];
-        
+
         // Get holidays that aren't hidden for calculation
         const visibleHolidaysList = $allHolidays.filter(h => !h.hidden);
-        
+
         // Calculate the new consecutive days with the added suggested day
         const potentialConsecutive = calculateConsecutiveDaysOff(
-            visibleHolidaysList, 
+            visibleHolidaysList,
             optimizedDaysOff,
-            year, 
-            $allWeekendDays, 
+            year,
+            $allWeekendDays,
             potentialPTODays
         );
-        
+
         // Find the period that includes the suggested date
-        const relevantPeriod = potentialConsecutive.find(period => 
+        const relevantPeriod = potentialConsecutive.find(period =>
             suggestedDate >= period.startDate && suggestedDate <= period.endDate
         );
-        
+
         return relevantPeriod ? relevantPeriod.totalDays : 0;
     }
 </script>
@@ -281,14 +315,13 @@
         {@const date = new Date(year, month, day)}
         {@const isPTO = isSelectedPTO(day)}
         {@const isStrategySuggested = isStrategySuggestedDay(day)}
-        {@const availablePTO = getAvailablePTO(day)}
         <div
-            class="day 
-                {isWeekend(date) ? 'weekend' : ''} 
-                {holiday ? 'holiday' : ''} 
-                {isOptimizedDayOff(day) && !isStrategySuggested ? 'optimized' : ''} 
-                {isStrategySuggested ? 'strategy-suggested' : ''} 
-                {isConsecutiveDayOff(day) ? 'consecutive-day' : ''} 
+            class="day
+                {isWeekend(date) ? 'weekend' : ''}
+                {holiday ? 'holiday' : ''}
+                {isOptimizedDayOff(day) && !isStrategySuggested ? 'optimized' : ''}
+                {isStrategySuggested ? 'strategy-suggested' : ''}
+                {isConsecutiveDayOff(day) ? 'consecutive-day' : ''}
                 {isPTO ? 'selected-pto' : ''}"
             on:click={() => handleDayClick(day)}
             on:keydown={(e) => e.key === 'Enter' && handleDayClick(day)}
@@ -296,15 +329,32 @@
             tabindex="0"
         >
             <span class={holiday?.hidden ? 'strikethrough' : ''}>{day}</span>
-            {#if holiday}
-                <Tooltip text={holiday.name} />
-            {:else if isPTO}
-                <Tooltip text={`Selected PTO Day`} />
-            {:else if isStrategySuggested}
-                <Tooltip text={`Suggested PTO Day`} />
-            {:else if !isWeekend(date)}
-                <Tooltip text={`Available PTO: ${availablePTO !== undefined ? availablePTO.toFixed(1) : '0.0'} ${$ptoConfig.balanceUnit || 'days'}`} />
-            {/if}
+            <Tooltip
+                html={true}
+                detailed={true}
+                text={`
+                    ${holiday ? `<div class="label">Holiday</div>
+                    <div class="value">${holiday.name}</div>
+                    <div class="divider"></div>` : ''}
+                    ${isPTO ? `<div class="label">Selected PTO Day</div>
+                    <div class="divider"></div>` : ''}
+                    ${isStrategySuggested ? `<div class="label">Suggested PTO Day</div>
+                    <div class="divider"></div>` : ''}
+                    ${isWeekend(date) ? `<div class="label">Weekend</div>
+                    <div class="divider"></div>` : ''}
+                    <div class="label">Date:</div>
+                    <div class="value">${date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+                    <div class="divider"></div>
+                    <div class="label">Available PTO:</div>
+                    <div class="value ${getAdjustedPTOBalance(date) > 3 ? 'highlight' : getAdjustedPTOBalance(date) > 0 ? 'highlight-warning' : 'highlight-danger'}">
+                        ${getAdjustedPTOBalance(date).toFixed(1)} ${$ptoConfig.balanceUnit || 'days'}
+                    </div>
+                    ${isStrategySuggested ? `<div class="label">Potential Days Off:</div>
+                    <div class="value">${getPotentialConsecutiveDays(date)} days</div>` : ''}
+                `}
+            >
+                <span></span>
+            </Tooltip>
         </div>
     {/each}
 </div>
@@ -377,16 +427,20 @@
         color: #333;
         background-color: #f9f9f9;
         position: relative;
+        cursor: pointer;
     }
-    .day:hover {
-        :global(.tooltip) {
-            opacity: 1;
-            pointer-events: auto;
-        }
+    .day:hover :global(.tooltip) {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
     }
     .weekend {
         background-color: #e0e0e0;
+        position: relative;
+        cursor: pointer;
     }
+
+
     .optimized {
         background-color: #4caf50;
     }
@@ -398,6 +452,7 @@
     .holiday {
         background-color: #7e57c2;
         cursor: pointer;
+        position: relative;
     }
     .consecutive-day {
         border: 1px solid rgba(0, 0, 0, 0.3);
@@ -423,22 +478,22 @@
         font-size: 0.8em;
         text-align: right;
     }
-    
+
     .pto-start {
         color: #4caf50;
         font-weight: bold;
     }
-    
+
     .pto-used {
         color: #ff9800;
         font-size: 0.9em;
     }
-    
+
     .pto-end {
         color: #4caf50;
         font-weight: bold;
     }
-    
+
     .consecutive-days-off {
         margin-top: 10px;
         color: #333;

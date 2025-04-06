@@ -47,7 +47,7 @@ export interface PtoEngineConfig {
  */
 export class PtoEngine {
     private config: PtoEngineConfig;
-    
+
     constructor(config: PtoEngineConfig) {
         this.config = {
             ...config,
@@ -58,7 +58,7 @@ export class PtoEngine {
             }
         };
     }
-    
+
     /**
      * Builds the full PTO ledger by generating, sorting, and processing all transactions.
      */
@@ -67,10 +67,19 @@ export class PtoEngine {
         console.log("Config:", this.config);
         console.log(`Selected PTO Days: ${selectedPtoDays.length}`);
 
+        if (selectedPtoDays.length > 0) {
+            console.log("Selected PTO dates:");
+            selectedPtoDays.forEach(day => {
+                console.log(`- ${day.date.toDateString()}`);
+            });
+        }
+
         // 1. Generate initial set of transactions (excluding carryover)
         const initialBalanceTransaction = this.generateInitialBalanceTransaction();
         const accrualTransactions = this.generateAccrualTransactions();
         const usageTransactions = this.generateUsageTransactions(selectedPtoDays);
+
+        console.log(`Generated ${usageTransactions.length} usage transactions for selected PTO days.`);
 
         // 2. Combine and sort transactions before calculating carryover
         let transactionsBeforeCarryover = [
@@ -103,44 +112,44 @@ export class PtoEngine {
         const ledger = this.buildDailyLedgerFromTransactions(allTransactions);
         console.log("--- PtoEngine: Finished buildLedger ---");
 
-        // Optional: Log ledger details for debugging
-        // this.logLedgerDetails(ledger, allTransactions);
+        // Log ledger details for debugging
+        this.logLedgerDetails(ledger, allTransactions);
 
         return ledger;
     }
-    
+
     /**
      * Get the balance available on a specific date from a ledger
      */
     public getBalanceOnDate(ledger: Record<string, DailyLedgerEntry>, date: Date): number {
         const dateKey = toYYYYMMDD(date);
-        
+
         // If exact date exists in ledger
         if (ledger[dateKey]) {
             return ledger[dateKey].balance;
         }
-        
+
         // Get all dates in ledger, sort them to be sure
         const ledgerDates = Object.keys(ledger).sort();
         if (ledgerDates.length === 0) {
              // If ledger is empty, return initial balance if date is on or after asOfDate
             return date >= this.config.asOfDate ? this.config.initialBalance : 0;
         }
-        
+
         const firstLedgerDateKey = ledgerDates[0];
         const lastLedgerDateKey = ledgerDates[ledgerDates.length - 1];
-        
+
         // If date is before the first entry in the ledger
         if (dateKey < firstLedgerDateKey) {
              // Before the ledger starts, the balance is effectively 0, unless it's the asOfDate itself
              return sameDay(date, this.config.asOfDate) ? this.config.initialBalance : 0;
         }
-        
+
         // If date is after the last entry in the ledger
         if (dateKey > lastLedgerDateKey) {
             return ledger[lastLedgerDateKey].balance; // Return the last known balance
         }
-        
+
         // Find the entry for the closest date <= the requested date
         let closestBalance = 0; // Default if no earlier date found (shouldn't happen with above checks)
         // Iterate backwards for efficiency
@@ -150,7 +159,7 @@ export class PtoEngine {
                 break;
             }
         }
-        
+
         return closestBalance;
     }
 
@@ -345,17 +354,21 @@ export class PtoEngine {
 
         console.log(`Generating ${validDays.length} usage transactions.`);
 
-
-        return validDays.map(day => {
+        // Create and log each usage transaction
+        const usageTransactions = validDays.map(day => {
              const usageDate = new Date(day.date);
              usageDate.setHours(0, 0, 0, 0); // Ensure start of day
-             return {
+             const transaction = {
                  date: usageDate,
-                 type: 'usage',
+                 type: 'usage' as const,
                  amount: -Math.abs(normalizedUsageAmount), // Ensure usage is negative
                  note: 'PTO Used'
              };
+             console.log(`  - Usage transaction on ${usageDate.toDateString()}: ${transaction.amount} ${this.config.balanceUnit}`);
+             return transaction;
         });
+
+        return usageTransactions;
     }
 
 
@@ -496,6 +509,10 @@ export class PtoEngine {
                       runningBalance = 0;
                  }
 
+                 // Log transaction application for debugging
+                 console.log(`Applied transaction on ${dateKey}: ${tx.type}, Amount=${tx.amount.toFixed(2)}, New Balance=${runningBalance.toFixed(2)}`);
+
+
 
                 dailyTransactions.push(tx);
                 transactionIndex++;
@@ -622,11 +639,15 @@ export class PtoEngine {
      }
 
 
-    // Optional: Helper for debugging
-    /*
+    // Helper for debugging
     private logLedgerDetails(ledger: Record<string, DailyLedgerEntry>, transactions: PtoTransaction[]): void {
         console.log("--- Ledger Details ---");
         const sortedKeys = Object.keys(ledger).sort();
+        if (sortedKeys.length === 0) {
+            console.log("Empty ledger - no entries to display");
+            return;
+        }
+
         console.log(`Ledger range: ${sortedKeys[0]} to ${sortedKeys[sortedKeys.length - 1]}`);
         console.log(`Total entries: ${sortedKeys.length}`);
 
@@ -639,19 +660,18 @@ export class PtoEngine {
         });
 
         console.log("Last 5 Ledger Entries:");
-         sortedKeys.slice(-5).forEach(key => {
-             const entry = ledger[key];
-             console.log(`- ${key}: Balance=${entry.balance.toFixed(2)}, Transactions=${entry.transactions.length}`);
-             entry.transactions.forEach(tx => console.log(`    - ${tx.type}, Amount=${tx.amount.toFixed(2)}, Note=${tx.note}`));
-         });
+        sortedKeys.slice(-5).forEach(key => {
+            const entry = ledger[key];
+            console.log(`- ${key}: Balance=${entry.balance.toFixed(2)}, Transactions=${entry.transactions.length}`);
+            entry.transactions.forEach(tx => console.log(`    - ${tx.type}, Amount=${tx.amount.toFixed(2)}, Note=${tx.note}`));
+        });
 
-
-         console.log("--- All Transactions (Sorted) ---");
-         transactions.forEach((tx, index) => {
-             console.log(`${index}: ${toYYYYMMDD(tx.date)} - ${tx.type} - Amount: ${tx.amount.toFixed(2)} - Note: ${tx.note}`);
-         });
+        // Uncomment to log all transactions
+        // console.log("--- All Transactions (Sorted) ---");
+        // transactions.forEach((tx, index) => {
+        //     console.log(`${index}: ${toYYYYMMDD(tx.date)} - ${tx.type} - Amount: ${tx.amount.toFixed(2)} - Note: ${tx.note}`);
+        // });
     }
-    */
 
 
-} 
+}

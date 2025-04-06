@@ -1,7 +1,7 @@
 <script lang="ts">
     import CalendarMonth from './CalendarMonth.svelte';
     import { holidays, optimizedDaysOff, consecutiveDaysOff, selectedCountryCode, weekendDays } from '../../stores/holidayStore';
-    import { selectedPTODays, currentPTOTodayBalance, visibleYears, updateVisibleYears, ptoConfig, dailyPTOLedger } from '../../stores/ptoStore';
+    import { selectedPTODays, currentPTOTodayBalance, visibleYears, updateVisibleYears, ptoConfig, dailyPTOLedger, ledgerVersion } from '../../stores/ptoStore';
     import { strategySuggestedDays } from '../../stores/strategyStore';
     import CalendarLegendMenu from '../ui/CalendarLegendMenu.svelte';
     import { ensureYearLoaded } from '../../stores/holidayStore';
@@ -18,44 +18,51 @@
     $: availableBalance = $currentPTOTodayBalance;
     $: holidaysList = $holidays;
     $: selectedVisibleYears = $visibleYears;
-    
+
     // Force UI refresh when ledger changes
-    $: ledgerVersion = Object.keys($dailyPTOLedger).length;
-    
+    $: localLedgerVersion = Object.keys($dailyPTOLedger).length;
+    $: globalVersionTracker = $ledgerVersion; // Track the global ledger version
+
     // Ensure we have holidays loaded for this year
     $: {
         ensureYearLoaded(year);
     }
-    
+
     // Handle day selection
     function handleDaySelected() {
         // Force reactivity update when a day is selected
         ptoCount = $selectedPTODays.length;
         console.log(`CalendarGrid: Day selected, total selected days: ${ptoCount}`);
         console.log(`Current balance: ${availableBalance.toFixed(1)} ${$ptoConfig.balanceUnit}`);
+
+        // Force UI refresh by incrementing the global ledger version
+        setTimeout(() => {
+            console.log(`CalendarGrid: Forcing UI refresh after day selection`);
+            ledgerVersion.update(v => v + 1);
+        }, 100);
     }
-    
+
     // Handle year selection
     function handleYearChange(e: Event) {
         const selectedYear = parseInt((e.target as HTMLSelectElement).value, 10);
-        
+
         // Update the visible year
         if (!selectedVisibleYears.includes(selectedYear)) {
             const newVisibleYears = [...selectedVisibleYears, selectedYear].sort();
             updateVisibleYears(newVisibleYears);
         }
-        
+
         // Make sure we load the holidays for this year
         ensureYearLoaded(selectedYear);
-        
+
         // Update the displayed year
         year = selectedYear;
     }
-    
+
     // Generate available years (current year - 1 to current year + 5)
     const currentYear = new Date().getFullYear();
     const availableYears = Array.from({ length: 7 }, (_, i) => currentYear - 1 + i);
-    
+
     onMount(() => {
         console.log("CalendarGrid mounted");
     });
@@ -114,13 +121,13 @@
         align-items: center;
         margin-bottom: 20px;
     }
-    
+
     .year-selector {
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    
+
     .year-selector select {
         padding: 8px 16px;
         border-radius: 8px;
@@ -128,25 +135,25 @@
         background-color: #fff;
         font-size: 1rem;
     }
-    
+
     .visible-years {
         display: flex;
         align-items: center;
         gap: 6px;
     }
-    
+
     .year-badge {
         padding: 4px 8px;
         border-radius: 16px;
         background-color: #e9e9e9;
         font-size: 0.875rem;
     }
-    
+
     .current-year {
         background-color: #4a90e2;
         color: white;
     }
-    
+
     .pto-summary {
         display: flex;
         justify-content: space-between;
@@ -157,25 +164,25 @@
         margin-bottom: 16px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-    
+
     .pto-summary-item {
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    
+
     .pto-label {
         font-size: 0.9rem;
         font-weight: 500;
         color: #555;
     }
-    
+
     .pto-value {
         font-size: 1.1rem;
         font-weight: 700;
         color: #4caf50;
     }
-    
+
     .pto-low {
         color: #ff5722;
     }
@@ -205,13 +212,13 @@
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 10px;
         }
-        
+
         .calendar-header {
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
         }
-        
+
         .pto-summary {
             flex-direction: column;
             align-items: flex-start;
